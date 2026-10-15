@@ -1,0 +1,43 @@
+#!/bin/bash
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export PYTHONPATH="$DIR:$DIR/utils:$DIR/isp:$DIR/alif:$DIR/cert:$PYTHONPATH"
+cd "$DIR"
+
+# Link image binaries so they can be read by app-write-mram
+if [ -d "$DIR/build/images" ]; then
+    for f in "$DIR/build/images"/*; do
+        if [ -f "$f" ]; then
+            base=$(basename "$f")
+            ln -sf "$f" "$DIR/$base"
+        fi
+    done
+fi
+
+# Sync newly generated application_package.ds into bin/
+if [ -f "$DIR/application_package.ds" ]; then
+    cp -f "$DIR/application_package.ds" "$DIR/bin/application_package.ds"
+fi
+
+# Detect configured serial port
+TARGET_PORT="/dev/ttyACM0"
+if [ -f "$DIR/isp_config_data.cfg" ]; then
+    CFG_PORT=$(awk '/^comport[[:space:]]+/ {print $2}' "$DIR/isp_config_data.cfg" | tr -d '\r')
+    if [ -n "$CFG_PORT" ]; then
+        TARGET_PORT="$CFG_PORT"
+    fi
+fi
+
+# Check if any background process (e.g. picocom, minicom) is locking the serial port
+if [ -e "$TARGET_PORT" ]; then
+    LOCKED_PIDS=$(fuser "$TARGET_PORT" 2>/dev/null)
+    if [ -n "$LOCKED_PIDS" ]; then
+        echo "[INFO] Detected conflicting process(es) holding $TARGET_PORT: $LOCKED_PIDS"
+        echo "[INFO] Automatically releasing $TARGET_PORT to prevent 'readSerial reporting disconnected'..."
+        fuser -k -9 "$TARGET_PORT" 2>/dev/null || true
+        sleep 0.5
+    fi
+else
+    echo "[WARNING] $TARGET_PORT not found. Ensure USB device is attached via: usbipd attach --wsl Ubuntu --busid <BUSID> -a"
+fi
+
+exec python3 "$DIR/app-write-mram.py" "$@"
