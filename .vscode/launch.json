@@ -2,38 +2,56 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Alif Ensemble Debug (Cortex-Debug)",
+            "name": "E8 Blinky Debug (M55_HP)",
             "cwd": "${workspaceFolder}",
-            "executable": "${command:cmsis-csolution.getBinaryFile}",
+            "executable": "${workspaceFolder}/out/blinky/DevKit-E8-HP/debug/blinky.elf",
             "request": "launch",
             "type": "cortex-debug",
-            "runToEntryPoint": "main",
             "servertype": "jlink",
-            "showDevDebugOutput": "parsed",
-            "device": "${command:cmsis-csolution.getDeviceName}_${command:cmsis-csolution.getProcessorName}",
+            "device": "AE722F80F55D5_HP",
             "interface": "jtag",
+            "runToEntryPoint": "main",
+            "showDevDebugOutput": "parsed",
+            "serverpath": "C:/Program Files/SEGGER/JLink/JLinkGDBServerCL.exe",
+            "armToolchainPath": "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/12.2 mpacbti-rel1/bin",
             "serverArgs": [
                 "-JLinkDevicesXmlPath",
-                ".alif/JLinkDevices.xml"
+                "${workspaceFolder}/.alif/JLinkDevices.xml"
             ],
             "preLaunchCommands": [
-                "monitor speed 15000"
+                "monitor speed 4000"
             ],
             "postLaunchCommands": [
                 "set $sp = __Vectors[0]",
                 "set $pc = __Vectors[1]",
                 "set *0xe000ed08 = __Vectors"
+            ]
+        },
+        {
+            "name": "E8 Blinky Debug (M55_HE)",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/out/blinky/DevKit-E8-HE/debug/blinky.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "device": "AE722F80F55D5_HE",
+            "interface": "jtag",
+            "runToEntryPoint": "main",
+            "showDevDebugOutput": "parsed",
+            "serverpath": "C:/Program Files/SEGGER/JLink/JLinkGDBServerCL.exe",
+            "armToolchainPath": "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/12.2 mpacbti-rel1/bin",
+            "serverArgs": [
+                "-JLinkDevicesXmlPath",
+                "${workspaceFolder}/.alif/JLinkDevices.xml"
             ],
-            "rttConfig": {
-                "enabled": true,
-                "address": "auto",
-                "decoders": [
-                    {
-                        "port": 0,
-                        "type": "console"
-                    }
-                ]
-            }
+            "preLaunchCommands": [
+                "monitor speed 4000"
+            ],
+            "postLaunchCommands": [
+                "set $sp = __Vectors[0]",
+                "set $pc = __Vectors[1]",
+                "set *0xe000ed08 = __Vectors"
+            ]
         },
         {
             "name": "M55_HE JLink (launch)",

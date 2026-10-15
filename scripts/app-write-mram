@@ -41,3 +41,4 @@ else
 fi
 
 exec python3 "$DIR/app-write-mram.py" "$@"
+

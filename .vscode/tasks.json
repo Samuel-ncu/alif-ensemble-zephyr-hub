@@ -14,6 +14,42 @@
             "jobs": 8
         },
         {
+            "label": "Build DevKit-E8-HP Blinky",
+            "type": "shell",
+            "command": "cbuild alif.csolution.yml --context blinky.debug+DevKit-E8-HP",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "Build DevKit-E8-HP Hello (UART)",
+            "type": "shell",
+            "command": "cbuild alif.csolution.yml --context hello.debug+DevKit-E8-HP",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "Build DevKit-E8-HP Hello (RTT)",
+            "type": "shell",
+            "command": "cbuild alif.csolution.yml --context hello_rtt.debug+DevKit-E8-HP",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "Build DevKit-E8-HE Blinky",
+            "type": "shell",
+            "command": "cbuild alif.csolution.yml --context blinky.debug+DevKit-E8-HE",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build"
+        },
+        {
             "label": "Clean all (including YML build files)",
             "type": "shell",
             "command": [
@@ -193,7 +229,8 @@
                 "-endian",
                 "little",
                 "-if",
-                "swd-speed",
+                "swd",
+                "-speed",
                 "4000",
                 "-nohalt",
                 "-noir",

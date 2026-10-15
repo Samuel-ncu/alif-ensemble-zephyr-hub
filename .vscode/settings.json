@@ -1,11 +1,17 @@
 {
     "files.associations": {
-        "*.h": "c",
+        "*.h": "c"
     },
-
+    "C_Cpp.intelliSenseEngine": "disabled",
     "cmake.configureOnOpen": false,
 
     "cortex-debug.variableUseNaturalFormat": false,
     "debug.hideSlowPreLaunchWarning": true,
     "debug.showInStatusBar": "never",
+    "cortex-debug.JLinkGDBServerPath": "C:/Program Files/SEGGER/JLink/JLinkGDBServerCL.exe",
+    "cortex-debug.armToolchainPath": "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/12.2 mpacbti-rel1/bin",
+    "cmake.sourceDirectory": "C:/Users/test/.gemini/antigravity/scratch/alif_vscode-template/tmp/DevKit-E8-HE/default",
+    "clangd.arguments": [
+        "--compile-commands-dir=c:\\Users\\test\\.gemini\\antigravity\\scratch\\alif_vscode-template\\out\\blinky\\DevKit-E8-HE\\debug"
+    ]
 }
