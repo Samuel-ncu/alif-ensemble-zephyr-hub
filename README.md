@@ -45,6 +45,8 @@ This hub solves notoriously frustrating hardware quirks out-of-the-box:
 │           └── SKILL.md       # Complete setup, build, flash & debug runbook
 ├── .github/
 │   └── FUNDING.yml            # GitHub Sponsor & Ko-fi config
+├── docs/
+│   └── HARDWARE_GPIO_REFERENCE.md # Verified DevKit Pinout, LEDs, SW2, & DesignWare rules
 ├── examples/
 │   ├── 01_hello_world/        # Verified UART console output
 │   ├── 02_blinky/             # Verified 1Hz GPIO LED toggle

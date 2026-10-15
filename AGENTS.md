@@ -12,10 +12,14 @@ This repository serves as a knowledge and execution hub for AI Coding Agents (su
 │           └── SKILL.md         # Alif Ensemble E8/E7 Zephyr RTOS complete runbook
 ├── .github/
 │   └── FUNDING.yml              # Sponsor and donation configuration
+├── docs/
+│   └── HARDWARE_GPIO_REFERENCE.md # Verified DevKit Pinout, LEDs, SW2, & DesignWare rules
 ├── examples/
 │   ├── 01_hello_world/          # Verified Example 01: UART Console Output
 │   ├── 02_blinky/               # Verified Example 02: GPIO LED1_G 1Hz Toggle
-│   └── 03_button/               # Example 03: Button SW0 Interrupt & LED Control
+│   └── 03_button/               # Verified Example 03: SW2 5-Way Joystick Interrupt
+├── scripts/
+│   └── app-write-mram           # Automated serial unlocking flash wrapper
 ├── LICENSE                      # Apache License 2.0
 ├── AGENTS.md                    # Agent instructions & guidelines (this file)
 └── README.md                    # Project overview & documentation
@@ -23,9 +27,10 @@ This repository serves as a knowledge and execution hub for AI Coding Agents (su
 
 ## How AI Agents Should Use This Repository
 
-1. **Skill Discovery**:
-   - When tasked with configuring, building, flashing, or debugging target hardware or frameworks, inspect the `.agents/skills/<skill-name>/SKILL.md` files.
-   - Each skill provides battle-tested workflows, hardware switch configurations, toolchain installations, and troubleshooting procedures.
+1. **Skill Discovery & Hardware Truth**:
+   - Inspect `.agents/skills/<skill-name>/SKILL.md` before executing build/flash commands.
+   - For all GPIO, LED, switch, and peripheral mappings, strictly consult [`docs/HARDWARE_GPIO_REFERENCE.md`](docs/HARDWARE_GPIO_REFERENCE.md).
+   - **Crucial Driver Rule**: DesignWare GPIO (`gpio_dw.c`) forbids `GPIO_PULL_UP`/`GPIO_PULL_DOWN` software flags. Use `GPIO_INPUT` only.
 
 2. **Skill Activation**:
    - Always read the relevant `SKILL.md` before attempting multi-step build, flash, or hardware tasks.

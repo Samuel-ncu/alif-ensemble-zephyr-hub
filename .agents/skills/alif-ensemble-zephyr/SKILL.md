@@ -192,6 +192,22 @@ exec python3 "$DIR/app-write-mram.py" "$@"
 ```
 Make executable: `chmod +x app-gen-toc app-write-mram tools-config`
 
+### 4.5 Synopsys DesignWare GPIO (`LPGPIO`) & Peripheral Constraints
+
+> [!CAUTION]
+> **Synopsys DesignWare GPIO Driver (`gpio_dw.c`) Software Constraint**:
+> The `LPGPIO` driver strictly prohibits software pull-up/pull-down flags (`flags & (GPIO_PULL_UP | GPIO_PULL_DOWN)` returns `-ENOTSUP` (-134)).
+> 1. **Rule**: ALWAYS configure input pins using `GPIO_INPUT` only:
+>    ```c
+>    /* Correct: Standard input. Hardware pull-ups are set in pinctrl */
+>    ret = gpio_pin_configure(button.port, pin, GPIO_INPUT);
+>    /* Forbidden: Passing GPIO_PULL_UP returns -ENOTSUP and breaks interrupts */
+>    ```
+> 2. **Interrupt Configuration**: Set `GPIO_INT_EDGE_BOTH` or `GPIO_INT_EDGE_FALLING` AFTER the pin has been successfully set to `GPIO_INPUT`.
+> 3. **LED Polarity**: `LED1_G` on `GPIO6_4` is an active-low circuit (anode to 3.3V, cathode to pin). Writing `0` turns it ON; writing `1` turns it OFF.
+> 
+> See the complete verified hardware mappings in [HARDWARE_GPIO_REFERENCE.md](references/HARDWARE_GPIO_REFERENCE.md).
+
 ---
 
 ## 5. Build, Flash, and Verify Workflow
@@ -267,6 +283,7 @@ west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_he samples/basic/button
 
 | Symptom | Root Cause | Solution |
 | :--- | :--- | :--- |
+| `gpio_pin_configure()` returns `-ENOTSUP` (-134), or button IRQ fails with `-EINVAL` (-22) | `GPIO_PULL_UP` or `GPIO_PULL_DOWN` was requested on Synopsys DesignWare `LPGPIO`. | Pass `GPIO_INPUT` only without pull flags. Pull-ups are hardware-managed via `pinctrl_lpgpio`. See [HARDWARE_GPIO_REFERENCE.md](references/HARDWARE_GPIO_REFERENCE.md). |
 | `[ERROR] /dev/ttyACM0 readSerial reporting disconnected` | **Multiple Access Conflict**: `picocom`, `minicom`, or another terminal emulator is running in background holding `/dev/ttyACM0`. Linux PySerial `select()` sees data but `read()` returns 0 bytes (stolen by picocom), throwing `SerialException` which the toolkit logs as "disconnected". | **1.** Use the enhanced `app-write-mram` wrapper (auto-runs `fuser -k -9 /dev/ttyACM0`).<br>**2.** Or manually execute `sudo fuser -k -9 /dev/ttyACM0` or `pkill -9 picocom`.<br>**3.** If USB dropped, ensure `usbipd attach --wsl Ubuntu --busid <BUSID> -a` is active. |
 | `[ERROR] Target did not respond` | `SW4` switch is not in the **`SE` (Top)** position, or board is hung executing user code. | 1. Slide `SW4` to **`SE` (Top)**.<br>2. Press the hardware **`RESET`** button once to force SE ROM ISP mode.<br>3. Retry `west flash`. |
 | `FATAL: cannot open /dev/ttyACM0` | Device disconnected, missing permissions, or bus reset. | Check Windows `usbipd list` and reattach with `usbipd attach --wsl Ubuntu --busid <BUSID> -a`. Check `sudo chmod 666 /dev/ttyACM0`. |
@@ -275,5 +292,6 @@ west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_he samples/basic/button
 | `west flash` fails to connect or timeouts | Terminal (`picocom`) is holding open `/dev/ttyACM0`, or `SW4` is in `UART` position. | Run `pkill -9 picocom`, slide `SW4` back to **`SE`**, and retry `west flash`. |
 | Flashing succeeds (100%), but SES reports `Bad Image` | `zephyr.bin` was not included in MRAM burn. | Ensure the `application_package.ds` fix in Section 4.4 is applied so `zephyr.bin` is burned at `0x80000000`. |
 | Windows shows USB Device Descriptor Request Failed | Cable is plugged into the `MCU` port. | Move the cable to the **`PRG`** port. |
+
 
 
