@@ -33,8 +33,8 @@ On the Alif E8 DevKit (Rev A0), user input is provided by a **5-Way Navigation J
 | Joystick Action | SoC GPIO Pin | Port Number | Keil Conductor Signal | DTS Node / Alias | Circuit State |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Center Push** | `LPGPIO_4` | Port 15, Pin 4 | `JOY_SW_CENTER` | `&button0` / `sw0` | **Active-Low** (Pressed = 0V / GND) |
-| **Up** | `LPGPIO_0` | Port 15, Pin 0 | `JOY_SW_A` | `&lpgpio 0` | **Active-Low** (Tilted Up = 0V / GND) |
-| **Down** | `LPGPIO_1` | Port 15, Pin 1 | `JOY_SW_B` | `&lpgpio 1` | **Active-Low** (Tilted Down = 0V / GND) |
+| **Up** | `LPGPIO_1` | Port 15, Pin 1 | `JOY_SW_B` | `&lpgpio 1` | **Active-Low** (Tilted Up = 0V / GND) |
+| **Down** | `LPGPIO_0` | Port 15, Pin 0 | `JOY_SW_A` | `&lpgpio 0` | **Active-Low** (Tilted Down = 0V / GND) |
 | **Left** | `LPGPIO_2` | Port 15, Pin 2 | `JOY_SW_C` | `&lpgpio 2` | **Active-Low** (Tilted Left = 0V / GND) |
 | **Right** | `LPGPIO_3` | Port 15, Pin 3 | `JOY_SW_D` | `&lpgpio 3` | **Active-Low** (Tilted Right = 0V / GND) |
 

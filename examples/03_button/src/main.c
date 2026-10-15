@@ -2,7 +2,7 @@
  * Copyright (c) 2026 Samuel (Shu-Ming) Liu
  * SPDX-License-Identifier: Apache-2.0
  *
- * Alif Ensemble E8 - SW2 5-Way Joystick & Pure RGB Color Calibration
+ * Example 03: Alif Ensemble E8 - SW2 5-Way Joystick Navigation & LED Control
  */
 
 #include <stdio.h>
@@ -18,6 +18,18 @@
 /* Devicetree Node for SW0 (LPGPIO_4 Center Push) */
 #define SW0_NODE DT_ALIAS(sw0)
 static const struct gpio_dt_spec joy_center = GPIO_DT_SPEC_GET_OR(SW0_NODE, gpios, {0});
+static struct gpio_callback joy_cb_data;
+
+/* Hardware-Verified Pin Definitions for SW2 on LPGPIO (Port 15) */
+#define JOY_PIN_DOWN   0  /* LPGPIO_0: Physical Down */
+#define JOY_PIN_UP     1  /* LPGPIO_1: Physical Up */
+#define JOY_PIN_LEFT   2  /* LPGPIO_2: Physical Left */
+#define JOY_PIN_RIGHT  3  /* LPGPIO_3: Physical Right */
+#define JOY_PIN_CENTER 4  /* LPGPIO_4: Physical Center Push */
+
+#define ALL_JOY_PINS_MASK (BIT(JOY_PIN_DOWN) | BIT(JOY_PIN_UP) | \
+                           BIT(JOY_PIN_LEFT) | BIT(JOY_PIN_RIGHT) | \
+                           BIT(JOY_PIN_CENTER))
 
 /* GPIO Port 6 (Onboard RGB LEDs: LED1_R, LED1_G, LED1_B) */
 #define PIN_LED_R 2  /* GPIO6_2: Red LED */
@@ -26,9 +38,7 @@ static const struct gpio_dt_spec joy_center = GPIO_DT_SPEC_GET_OR(SW0_NODE, gpio
 
 static const struct device *gpio6_dev = DEVICE_DT_GET(DT_NODELABEL(gpio6));
 
-/*
- * Calibrated LED Control: Active-High logic (1 = ON, 0 = OFF)
- */
+/* Active-High RGB LED Helper (1 = ON, 0 = OFF) */
 static inline void set_rgb(int r, int g, int b) {
 	if (gpio6_dev) {
 		gpio_pin_set(gpio6_dev, PIN_LED_R, r ? 1 : 0);
@@ -36,6 +46,10 @@ static inline void set_rgb(int r, int g, int b) {
 		gpio_pin_set(gpio6_dev, PIN_LED_B, b ? 1 : 0);
 	}
 }
+
+static volatile bool green_led_state = false;
+static volatile uint32_t event_count = 0;
+static volatile int64_t last_action_time = 0;
 
 /* Enable hardware pull-up resistors in the SoC Pad Control block */
 static void configure_lpgpio_hardware_pullups(void)
@@ -46,13 +60,58 @@ static void configure_lpgpio_hardware_pullups(void)
 	}
 }
 
+/* Handle SW2 actions with debouncing */
+static void handle_sw2_action(const char *action_name, int toggle_green, int force_green)
+{
+	int64_t now = k_uptime_get();
+	if (now - last_action_time < 180) {
+		return; /* Debounce */
+	}
+	last_action_time = now;
+	event_count++;
+
+	if (force_green >= 0) {
+		green_led_state = (force_green != 0);
+	} else if (toggle_green) {
+		green_led_state = !green_led_state;
+	}
+
+	/* Update green LED */
+	set_rgb(0, green_led_state ? 1 : 0, 0);
+
+	printf("[SW2 Event #%u] Action: %s -> Green LED: %s (Time: %lld ms)\n",
+	       event_count, action_name, green_led_state ? "ON" : "OFF", now);
+}
+
+/* Hardware Interrupt Callback for SW2 */
+void joy_pressed_callback(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+	if (pins & BIT(JOY_PIN_CENTER)) {
+		handle_sw2_action("CENTER PUSH (Toggle)", 1, -1);
+	} else if (pins & BIT(JOY_PIN_UP)) {
+		handle_sw2_action("UP (Turn ON)", 0, 1);
+	} else if (pins & BIT(JOY_PIN_DOWN)) {
+		handle_sw2_action("DOWN (Turn OFF / 熄滅)", 0, 0);
+	} else if (pins & BIT(JOY_PIN_LEFT)) {
+		handle_sw2_action("LEFT (Toggle)", 1, -1);
+	} else if (pins & BIT(JOY_PIN_RIGHT)) {
+		handle_sw2_action("RIGHT (Toggle)", 1, -1);
+	}
+}
+
 int main(void)
 {
 	int ret;
 
 	printf("\n=======================================================\n");
-	printf("*** Alif Ensemble E8 - SW2 Joystick Calibrated Test ***\n");
+	printf("*** Alif Ensemble E8 - SW2 Joystick & LED Control ***\n");
 	printf("Target Board: %s (RTSS-HE)\n", CONFIG_BOARD);
+	printf("SW2 Physical Mapping (Hardware-Verified):\n");
+	printf("  - LPGPIO_1: UP        -> Turn ON Green LED\n");
+	printf("  - LPGPIO_0: DOWN      -> Turn OFF Green LED (熄滅)\n");
+	printf("  - LPGPIO_4: CENTER    -> Toggle Green LED (切換)\n");
+	printf("  - LPGPIO_2: LEFT      -> Toggle Green LED (切換)\n");
+	printf("  - LPGPIO_3: RIGHT     -> Toggle Green LED (切換)\n");
 	printf("=======================================================\n");
 
 	/* 1. Initialize RGB LEDs on GPIO6 */
@@ -68,14 +127,18 @@ int main(void)
 	/* Turn off all LEDs initially */
 	set_rgb(0, 0, 0);
 
-	/* Startup LED Self-Test: Red -> Green -> Blue in clean sequence */
+	/* Startup LED Self-Test: Red -> Green -> Blue */
 	printf(">> Startup Self-Test: Red -> Green -> Blue\n");
-	set_rgb(1, 0, 0); k_msleep(300); set_rgb(0, 0, 0); k_msleep(100);
-	set_rgb(0, 1, 0); k_msleep(300); set_rgb(0, 0, 0); k_msleep(100);
-	set_rgb(0, 0, 1); k_msleep(300); set_rgb(0, 0, 0); k_msleep(200);
+	set_rgb(1, 0, 0); k_msleep(250); set_rgb(0, 0, 0); k_msleep(80);
+	set_rgb(0, 1, 0); k_msleep(250); set_rgb(0, 0, 0); k_msleep(80);
+	set_rgb(0, 0, 1); k_msleep(250); set_rgb(0, 0, 0); k_msleep(150);
 
-	/* 2. Configure Hardware Pull-ups on Pad Control */
-	printf(">> Activating hardware internal pull-up on LPGPIO 0..4 (0x42007000 = 0x2B)...\n");
+	/* Ensure Green LED is OFF initially */
+	green_led_state = false;
+	set_rgb(0, 0, 0);
+
+	/* 2. Configure Hardware Pull-ups on Pad Control Block */
+	printf(">> Activating hardware internal pull-up on LPGPIO 0..4...\n");
 	configure_lpgpio_hardware_pullups();
 
 	/* 3. Configure LPGPIO Pins 0..4 as Standard GPIO_INPUT */
@@ -89,69 +152,57 @@ int main(void)
 		if (ret != 0) {
 			printf("[ERROR] Failed to configure LPGPIO pin %d: %d\n", pin, ret);
 		}
+
+		/* Configure falling edge interrupt (Active-Low press) */
+		ret = gpio_pin_interrupt_configure(joy_center.port, pin, GPIO_INT_EDGE_FALLING);
+		if (ret != 0) {
+			printf("[ERROR] Failed to configure IRQ on pin %d: %d\n", pin, ret);
+		}
 	}
 
-	printf(">> Calibration Loop Running!\n");
-	printf("   [Idle / 放開]   : 純綠燈 1Hz 心跳閃爍 (紅/藍全滅)\n");
-	printf("   [Center / 按壓] : 純紅燈 恆亮 (Solid RED)\n");
-	printf("   [Up / 向上推]   : 純藍燈 恆亮 (Solid BLUE)\n");
-	printf("   [Down / 向下推] : 純綠燈 恆亮 (Solid GREEN)\n");
-	printf("   [Left / 向左推] : 藍綠光 恆亮 (Cyan: Blue + Green)\n");
-	printf("   [Right / 向右推]: 紫光 恆亮   (Magenta: Red + Blue)\n");
+	/* 4. Register Hardware Interrupt Callback */
+	gpio_init_callback(&joy_cb_data, joy_pressed_callback, ALL_JOY_PINS_MASK);
+	ret = gpio_add_callback(joy_center.port, &joy_cb_data);
+	if (ret != 0) {
+		printf("[ERROR] Failed to register callback: %d\n", ret);
+	}
 
-	bool idle_green_toggle = false;
-	uint32_t last_mask = 0xFF;
-	uint32_t loop_tick = 0;
+	printf(">> Ready! Press or tilt SW2:\n");
+	printf("   - Push CENTER: Toggle Green LED\n");
+	printf("   - Push UP    : Turn Green LED ON\n");
+	printf("   - Push DOWN  : Turn Green LED OFF (熄滅)\n");
+	printf("   - Push LEFT  : Toggle Green LED\n");
+	printf("   - Push RIGHT : Toggle Green LED\n");
+
+	/* 5. Polling fallback in main loop */
+	uint32_t last_pins = 0x1F; /* All 5 pins high initially */
 
 	while (1) {
-		/* Read SW2 pins (Active-Low: 0 = Pressed, 1 = Idle/High) */
-		int p_up     = gpio_pin_get(joy_center.port, 0); /* LPGPIO_0 */
-		int p_down   = gpio_pin_get(joy_center.port, 1); /* LPGPIO_1 */
-		int p_left   = gpio_pin_get(joy_center.port, 2); /* LPGPIO_2 */
-		int p_right  = gpio_pin_get(joy_center.port, 3); /* LPGPIO_3 */
-		int p_center = gpio_pin_get(joy_center.port, 4); /* LPGPIO_4 */
+		int p_down   = gpio_pin_get(joy_center.port, JOY_PIN_DOWN);
+		int p_up     = gpio_pin_get(joy_center.port, JOY_PIN_UP);
+		int p_left   = gpio_pin_get(joy_center.port, JOY_PIN_LEFT);
+		int p_right  = gpio_pin_get(joy_center.port, JOY_PIN_RIGHT);
+		int p_center = gpio_pin_get(joy_center.port, JOY_PIN_CENTER);
 
-		uint32_t current_mask = (p_up << 0) | (p_down << 1) | (p_left << 2) |
-		                        (p_right << 3) | (p_center << 4);
+		uint32_t cur_pins = (p_down << 0) | (p_up << 1) | (p_left << 2) |
+		                    (p_right << 3) | (p_center << 4);
 
-		if (current_mask != last_mask) {
-			printf("[SW2 State Change] Mask=0x%02X (C=%d R=%d L=%d D=%d U=%d)\n",
-			       current_mask, p_center, p_right, p_left, p_down, p_up);
-			last_mask = current_mask;
-		}
-
-		/* Check which action is active */
-		if (p_center == 0) {
-			/* Center Push -> Pure Solid RED */
-			set_rgb(1, 0, 0);
-			k_msleep(50);
-		} else if (p_up == 0) {
-			/* Up -> Pure Solid BLUE */
-			set_rgb(0, 0, 1);
-			k_msleep(50);
-		} else if (p_down == 0) {
-			/* Down -> Pure Solid GREEN */
-			set_rgb(0, 1, 0);
-			k_msleep(50);
-		} else if (p_left == 0) {
-			/* Left -> Cyan (Blue + Green) */
-			set_rgb(0, 1, 1);
-			k_msleep(50);
-		} else if (p_right == 0) {
-			/* Right -> Magenta (Red + Blue) */
-			set_rgb(1, 0, 1);
-			k_msleep(50);
-		} else {
-			/* IDLE: Pure Green 1 Hz Heartbeat Blink (500ms ON / 500ms OFF) */
-			idle_green_toggle = !idle_green_toggle;
-			set_rgb(0, idle_green_toggle ? 1 : 0, 0);
-
-			if (++loop_tick % 4 == 0) {
-				printf("[Heartbeat] Uptime=%lld ms | Idle Pins=0x%02X\n",
-				       k_uptime_get(), current_mask);
+		if (cur_pins != last_pins) {
+			if (p_center == 0 && (last_pins & BIT(JOY_PIN_CENTER))) {
+				handle_sw2_action("CENTER PUSH (Toggle)", 1, -1);
+			} else if (p_up == 0 && (last_pins & BIT(JOY_PIN_UP))) {
+				handle_sw2_action("UP (Turn ON)", 0, 1);
+			} else if (p_down == 0 && (last_pins & BIT(JOY_PIN_DOWN))) {
+				handle_sw2_action("DOWN (Turn OFF / 熄滅)", 0, 0);
+			} else if (p_left == 0 && (last_pins & BIT(JOY_PIN_LEFT))) {
+				handle_sw2_action("LEFT (Toggle)", 1, -1);
+			} else if (p_right == 0 && (last_pins & BIT(JOY_PIN_RIGHT))) {
+				handle_sw2_action("RIGHT (Toggle)", 1, -1);
 			}
-			k_msleep(500);
+			last_pins = cur_pins;
 		}
+
+		k_msleep(25);
 	}
 
 	return 0;
