@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2026 Samuel (Shu-Ming) Liu
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * Alif Ensemble E8 - SW2 5-Way Joystick & Pure RGB Color Calibration
  */
 
 #include <stdio.h>
@@ -8,140 +10,148 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 
-/* The devicetree node identifier for the "sw0" alias (Button SW0 / LPGPIO_4) */
+/* LPGPIO Pad Control Base (Low-Power Subsystem) */
+#define LPGPIO_PADCTRL_BASE 0x42007000
+/* PADCTRL: READ_ENABLE (0x01) | SCHMITT (0x02) | DRIVER_DISABLED_PULL_UP (0x08) | 4MA (0x20) = 0x2B */
+#define PADCTRL_VAL_PULL_UP (0x01U | 0x02U | 0x08U | 0x20U)
+
+/* Devicetree Node for SW0 (LPGPIO_4 Center Push) */
 #define SW0_NODE DT_ALIAS(sw0)
-static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET_OR(SW0_NODE, gpios, {0});
-static struct gpio_callback joy_cb_data;
+static const struct gpio_dt_spec joy_center = GPIO_DT_SPEC_GET_OR(SW0_NODE, gpios, {0});
 
-/* The devicetree node identifier for the "led0" alias (LED1_G / GPIO6_4) */
-#define LED0_NODE DT_ALIAS(led0)
-static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET_OR(LED0_NODE, gpios, {0});
+/* GPIO Port 6 (Onboard RGB LEDs: LED1_R, LED1_G, LED1_B) */
+#define PIN_LED_R 2  /* GPIO6_2: Red LED */
+#define PIN_LED_G 4  /* GPIO6_4: Green LED (led0 alias) */
+#define PIN_LED_B 6  /* GPIO6_6: Blue LED */
 
-/* 5-way Joystick Pin Definitions on LPGPIO (Port 15) */
-#define JOY_PIN_UP     0  /* LPGPIO_0 */
-#define JOY_PIN_DOWN   1  /* LPGPIO_1 */
-#define JOY_PIN_LEFT   2  /* LPGPIO_2 */
-#define JOY_PIN_RIGHT  3  /* LPGPIO_3 */
-#define JOY_PIN_CENTER 4  /* LPGPIO_4 */
+static const struct device *gpio6_dev = DEVICE_DT_GET(DT_NODELABEL(gpio6));
 
-#define ALL_JOY_PINS_MASK 0xFF  /* Support all LPGPIO pins 0..7 */
-
-static volatile uint32_t event_count = 0;
-static volatile int64_t last_irq_time = 0;
-
-/* Hardware Interrupt Callback for SW2 Joystick/Button */
-void joy_pressed_callback(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
-{
-	int64_t now = k_uptime_get();
-	if (now - last_irq_time < 120) {
-		/* Debounce */
-		return;
+/*
+ * Calibrated LED Control: Active-High logic (1 = ON, 0 = OFF)
+ */
+static inline void set_rgb(int r, int g, int b) {
+	if (gpio6_dev) {
+		gpio_pin_set(gpio6_dev, PIN_LED_R, r ? 1 : 0);
+		gpio_pin_set(gpio6_dev, PIN_LED_G, g ? 1 : 0);
+		gpio_pin_set(gpio6_dev, PIN_LED_B, b ? 1 : 0);
 	}
-	last_irq_time = now;
-	event_count++;
+}
 
-	/* Toggle Green LED on any joystick action */
-	gpio_pin_toggle_dt(&led);
-
-	printf("[IRQ #%u] SW2 Triggered (Pins=0x%02X, Time=%lld ms)\n",
-	       event_count, (unsigned int)(pins & 0xFF), now);
+/* Enable hardware pull-up resistors in the SoC Pad Control block */
+static void configure_lpgpio_hardware_pullups(void)
+{
+	volatile uint32_t *pad_ctrl = (volatile uint32_t *)LPGPIO_PADCTRL_BASE;
+	for (int i = 0; i < 5; i++) {
+		pad_ctrl[i] = PADCTRL_VAL_PULL_UP;
+	}
 }
 
 int main(void)
 {
 	int ret;
 
-	printf("\n==================================================\n");
-	printf("*** Alif Ensemble E8 - SW2 Joystick & Button IRQ ***\n");
-	printf("Target Board: %s\n", CONFIG_BOARD);
-	printf("LED Device  : %s (Pin %d)\n", led.port->name, led.pin);
-	printf("Joystick Dev: %s (LPGPIO Pins 0..7)\n", button.port->name);
-	printf("==================================================\n");
+	printf("\n=======================================================\n");
+	printf("*** Alif Ensemble E8 - SW2 Joystick Calibrated Test ***\n");
+	printf("Target Board: %s (RTSS-HE)\n", CONFIG_BOARD);
+	printf("=======================================================\n");
 
-	/* 1. Configure Green LED */
-	if (!gpio_is_ready_dt(&led)) {
-		printf("Error: LED device %s is not ready!\n", led.port->name);
-		return 0;
-	}
-	ret = gpio_pin_configure_dt(&led, GPIO_OUTPUT);
-	if (ret != 0) {
-		printf("Error: Failed to configure LED (%d)\n", ret);
+	/* 1. Initialize RGB LEDs on GPIO6 */
+	if (!device_is_ready(gpio6_dev)) {
+		printf("[ERROR] GPIO6 controller not ready!\n");
 		return 0;
 	}
 
-	/* Self-test: Blink LED 3 times quickly on boot to confirm new FW is alive */
-	printf(">> Boot Self-test: Blinking LED 3 times...\n");
-	for (int i = 0; i < 3; i++) {
-		gpio_pin_set_dt(&led, 0); /* ON/OFF phase */
-		k_msleep(150);
-		gpio_pin_set_dt(&led, 1); /* Opposite phase */
-		k_msleep(150);
-	}
-	/* Ensure LED is OFF initially (Pin High = Cathode High = OFF) */
-	gpio_pin_set_dt(&led, 1);
+	gpio_pin_configure(gpio6_dev, PIN_LED_R, GPIO_OUTPUT_INACTIVE);
+	gpio_pin_configure(gpio6_dev, PIN_LED_G, GPIO_OUTPUT_INACTIVE);
+	gpio_pin_configure(gpio6_dev, PIN_LED_B, GPIO_OUTPUT_INACTIVE);
 
-	/* 2. Configure LPGPIO Pins 0..7 (SW2 5-Way Joystick) as GPIO_INPUT */
-	if (!gpio_is_ready_dt(&button)) {
-		printf("Error: LPGPIO device %s is not ready!\n", button.port->name);
+	/* Turn off all LEDs initially */
+	set_rgb(0, 0, 0);
+
+	/* Startup LED Self-Test: Red -> Green -> Blue in clean sequence */
+	printf(">> Startup Self-Test: Red -> Green -> Blue\n");
+	set_rgb(1, 0, 0); k_msleep(300); set_rgb(0, 0, 0); k_msleep(100);
+	set_rgb(0, 1, 0); k_msleep(300); set_rgb(0, 0, 0); k_msleep(100);
+	set_rgb(0, 0, 1); k_msleep(300); set_rgb(0, 0, 0); k_msleep(200);
+
+	/* 2. Configure Hardware Pull-ups on Pad Control */
+	printf(">> Activating hardware internal pull-up on LPGPIO 0..4 (0x42007000 = 0x2B)...\n");
+	configure_lpgpio_hardware_pullups();
+
+	/* 3. Configure LPGPIO Pins 0..4 as Standard GPIO_INPUT */
+	if (!gpio_is_ready_dt(&joy_center)) {
+		printf("[ERROR] LPGPIO controller %s not ready!\n", joy_center.port->name);
 		return 0;
 	}
 
-	for (int pin = 0; pin < 8; pin++) {
-		/* DesignWare GPIO requires GPIO_INPUT without GPIO_PULL_UP */
-		ret = gpio_pin_configure(button.port, pin, GPIO_INPUT);
+	for (int pin = 0; pin < 5; pin++) {
+		ret = gpio_pin_configure(joy_center.port, pin, GPIO_INPUT);
 		if (ret != 0) {
-			printf("Error: Failed to configure pin %d (%d)\n", pin, ret);
-		}
-
-		/* Trigger interrupt on both edges (press and release) */
-		ret = gpio_pin_interrupt_configure(button.port, pin, GPIO_INT_EDGE_BOTH);
-		if (ret != 0) {
-			printf("Error: Failed to configure IRQ on pin %d (%d)\n", pin, ret);
+			printf("[ERROR] Failed to configure LPGPIO pin %d: %d\n", pin, ret);
 		}
 	}
 
-	/* 3. Register Global Callback for All Joystick Pins */
-	gpio_init_callback(&joy_cb_data, joy_pressed_callback, ALL_JOY_PINS_MASK);
-	ret = gpio_add_callback(button.port, &joy_cb_data);
-	if (ret != 0) {
-		printf("Error: Failed to add callback (%d)\n", ret);
-	}
+	printf(">> Calibration Loop Running!\n");
+	printf("   [Idle / 放開]   : 純綠燈 1Hz 心跳閃爍 (紅/藍全滅)\n");
+	printf("   [Center / 按壓] : 純紅燈 恆亮 (Solid RED)\n");
+	printf("   [Up / 向上推]   : 純藍燈 恆亮 (Solid BLUE)\n");
+	printf("   [Down / 向下推] : 純綠燈 恆亮 (Solid GREEN)\n");
+	printf("   [Left / 向左推] : 藍綠光 恆亮 (Cyan: Blue + Green)\n");
+	printf("   [Right / 向右推]: 紫光 恆亮   (Magenta: Red + Blue)\n");
 
-	printf(">> SW2 Joystick & Button IRQ Ready!\n");
-	printf(">> Press SW2 in any direction to toggle the Green LED!\n");
-
-	/* 4. Background polling fallback for 100% guarantee */
-	uint32_t last_pins = 0;
-	for (int p = 0; p < 8; p++) {
-		int val = gpio_pin_get(button.port, p);
-		if (val > 0) {
-			last_pins |= BIT(p);
-		}
-	}
-	printf(">> Initial LPGPIO Pins State: 0x%02X\n", last_pins);
+	bool idle_green_toggle = false;
+	uint32_t last_mask = 0xFF;
+	uint32_t loop_tick = 0;
 
 	while (1) {
-		uint32_t cur_pins = 0;
-		for (int p = 0; p < 8; p++) {
-			int val = gpio_pin_get(button.port, p);
-			if (val > 0) {
-				cur_pins |= BIT(p);
-			}
+		/* Read SW2 pins (Active-Low: 0 = Pressed, 1 = Idle/High) */
+		int p_up     = gpio_pin_get(joy_center.port, 0); /* LPGPIO_0 */
+		int p_down   = gpio_pin_get(joy_center.port, 1); /* LPGPIO_1 */
+		int p_left   = gpio_pin_get(joy_center.port, 2); /* LPGPIO_2 */
+		int p_right  = gpio_pin_get(joy_center.port, 3); /* LPGPIO_3 */
+		int p_center = gpio_pin_get(joy_center.port, 4); /* LPGPIO_4 */
+
+		uint32_t current_mask = (p_up << 0) | (p_down << 1) | (p_left << 2) |
+		                        (p_right << 3) | (p_center << 4);
+
+		if (current_mask != last_mask) {
+			printf("[SW2 State Change] Mask=0x%02X (C=%d R=%d L=%d D=%d U=%d)\n",
+			       current_mask, p_center, p_right, p_left, p_down, p_up);
+			last_mask = current_mask;
 		}
 
-		if (cur_pins != last_pins) {
-			int64_t now = k_uptime_get();
-			if (now - last_irq_time >= 100) {
-				event_count++;
-				gpio_pin_toggle_dt(&led);
-				last_irq_time = now;
-				printf("[Poll #%u] SW2 Pin Changed: 0x%02X -> 0x%02X | LED Toggled!\n",
-				       event_count, last_pins, cur_pins);
-			}
-			last_pins = cur_pins;
-		}
+		/* Check which action is active */
+		if (p_center == 0) {
+			/* Center Push -> Pure Solid RED */
+			set_rgb(1, 0, 0);
+			k_msleep(50);
+		} else if (p_up == 0) {
+			/* Up -> Pure Solid BLUE */
+			set_rgb(0, 0, 1);
+			k_msleep(50);
+		} else if (p_down == 0) {
+			/* Down -> Pure Solid GREEN */
+			set_rgb(0, 1, 0);
+			k_msleep(50);
+		} else if (p_left == 0) {
+			/* Left -> Cyan (Blue + Green) */
+			set_rgb(0, 1, 1);
+			k_msleep(50);
+		} else if (p_right == 0) {
+			/* Right -> Magenta (Red + Blue) */
+			set_rgb(1, 0, 1);
+			k_msleep(50);
+		} else {
+			/* IDLE: Pure Green 1 Hz Heartbeat Blink (500ms ON / 500ms OFF) */
+			idle_green_toggle = !idle_green_toggle;
+			set_rgb(0, idle_green_toggle ? 1 : 0, 0);
 
-		k_msleep(30);
+			if (++loop_tick % 4 == 0) {
+				printf("[Heartbeat] Uptime=%lld ms | Idle Pins=0x%02X\n",
+				       k_uptime_get(), current_mask);
+			}
+			k_msleep(500);
+		}
 	}
 
 	return 0;

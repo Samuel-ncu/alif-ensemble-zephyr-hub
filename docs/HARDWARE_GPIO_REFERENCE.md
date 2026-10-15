@@ -9,18 +9,20 @@ This document serves as the **definitive, hardware-verified reference** for GPIO
 
 ## 1. Onboard LEDs & GPIO Mapping
 
-| Silk Screen | Function / Color | SoC GPIO Port & Pin | Devicetree Node | DTS Alias | Active Level / Circuit Logic |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **`LED1_G`** | User Green LED | `GPIO6_4` (Port 6, Pin 4) | `&aled0` in `leds` | `led0` | **Active-Low**: `0` = ON (sinks current), `1` = OFF (cutoff) |
-| **`LED1_R`** | User Red LED | `GPIO6_2` (Port 6, Pin 2) | Defined on HP/Dual core | `led1` | **Active-Low**: `0` = ON, `1` = OFF |
-| **`LED1_B`** | User Blue LED | `GPIO6_3` (Port 6, Pin 3) | Optional overlay | `led2` | **Active-Low**: `0` = ON, `1` = OFF |
+On the Alif E8 DevKit (Rev A0), the primary user RGB LEDs are located on **GPIO Port 6** (`LEDRGB1`):
 
-### ⚠️ LED Polarity Rule
-- In Zephyr's DTS for `alif_e8_dk`, the LED flags are defined as `0` (`GPIO_ACTIVE_HIGH`).
-- Because the physical circuit has the LED anode tied to 3.3V and cathode connected to the GPIO:
-  - `gpio_pin_set_dt(&led, 0)` -> Outputs 0V -> **LED is ON**.
-  - `gpio_pin_set_dt(&led, 1)` -> Outputs 3.3V -> **LED is OFF**.
-  - Always use `gpio_pin_toggle_dt(&led)` for reliable state flipping!
+| Silk Screen | Function / Color | SoC GPIO Port & Pin | Devicetree Node | DTS Alias | Active Level / Logic |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`LED1_G`** | User Green LED | `GPIO6_4` (Port 6, Pin 4) | `&aled0` in `leds` | `led0` | **Active-High**: `1` = ON, `0` = OFF |
+| **`LED1_R`** | User Red LED | `GPIO6_2` (Port 6, Pin 2) | `&gpio6 2` | `led1` | **Active-High**: `1` = ON, `0` = OFF |
+| **`LED1_B`** | User Blue LED | `GPIO6_6` (Port 6, Pin 6) | `&gpio6 6` | `led2` | **Active-High**: `1` = ON, `0` = OFF |
+
+### 💡 LED Polarity Rule
+- Physical hardware validation confirms: **`1` = LED ON, `0` = LED OFF**.
+- Writing `1` to all three pins produces **White Light** (Red + Green + Blue).
+- Writing `1` to Red + Green produces **Yellow Light**.
+- Writing `1` to Red + Blue produces **Purple/Magenta Light**.
+- Writing `1` to Green + Blue produces **Cyan/Teal Light**.
 
 ---
 
@@ -28,36 +30,38 @@ This document serves as the **definitive, hardware-verified reference** for GPIO
 
 On the Alif E8 DevKit (Rev A0), user input is provided by a **5-Way Navigation Joystick / Push Switch** labeled **`SW2`**.
 
-| Joystick Action | SoC GPIO Pin | Port Number | NVIC IRQ Line | DTS Node / Alias | Circuit State |
+| Joystick Action | SoC GPIO Pin | Port Number | Keil Conductor Signal | DTS Node / Alias | Circuit State |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Center Push** | `LPGPIO_4` | Port 15, Pin 4 | IRQ 175 | `&button0` / `sw0` | **Active-Low** (Pressed = GND) |
-| **Up** | `LPGPIO_0` | Port 15, Pin 0 | IRQ 171 | `&lpgpio 0` | **Active-Low** (Tilted Up = GND) |
-| **Down** | `LPGPIO_1` | Port 15, Pin 1 | IRQ 172 | `&lpgpio 1` | **Active-Low** (Tilted Down = GND) |
-| **Left** | `LPGPIO_2` | Port 15, Pin 2 | IRQ 173 | `&lpgpio 2` | **Active-Low** (Tilted Left = GND) |
-| **Right** | `LPGPIO_3` | Port 15, Pin 3 | IRQ 174 | `&lpgpio 3` | **Active-Low** (Tilted Right = GND) |
-| *Auxiliary* | `LPGPIO_5` | Port 15, Pin 5 | IRQ 176 | `&lpgpio 5` | Camera/Peripheral reset |
-| *Auxiliary* | `LPGPIO_6` | Port 15, Pin 6 | IRQ 177 | `&lpgpio 6` | Auxiliary |
-| *Auxiliary* | `LPGPIO_7` | Port 15, Pin 7 | IRQ 178 | `&lpgpio 7` | Auxiliary |
+| **Center Push** | `LPGPIO_4` | Port 15, Pin 4 | `JOY_SW_CENTER` | `&button0` / `sw0` | **Active-Low** (Pressed = 0V / GND) |
+| **Up** | `LPGPIO_0` | Port 15, Pin 0 | `JOY_SW_A` | `&lpgpio 0` | **Active-Low** (Tilted Up = 0V / GND) |
+| **Down** | `LPGPIO_1` | Port 15, Pin 1 | `JOY_SW_B` | `&lpgpio 1` | **Active-Low** (Tilted Down = 0V / GND) |
+| **Left** | `LPGPIO_2` | Port 15, Pin 2 | `JOY_SW_C` | `&lpgpio 2` | **Active-Low** (Tilted Left = 0V / GND) |
+| **Right** | `LPGPIO_3` | Port 15, Pin 3 | `JOY_SW_D` | `&lpgpio 3` | **Active-Low** (Tilted Right = 0V / GND) |
 
 ---
 
-## 3. Critical Driver Rule: Synopsys DesignWare GPIO (`gpio_dw.c`)
+## 3. Critical Driver Rule: Synopsys DesignWare GPIO & Hardware Pad Control
 
 Alif Ensemble Low-Power GPIO (`LPGPIO`) uses the **Synopsys DesignWare GPIO IP** (`compatible = "snps,designware-gpio"`).
 
-### 🚫 The `GPIO_PULL_UP` Prohibition Bug
-In Zephyr's DesignWare GPIO driver (`zephyr/drivers/gpio/gpio_dw.c` lines 301-304):
-```c
-/* Does not support pull-up/pull-down */
-if ((flags & (GPIO_PULL_UP | GPIO_PULL_DOWN)) != 0U) {
-    return -ENOTSUP; /* Error -134 */
-}
-```
+### 🚫 The `GPIO_PULL_UP` Prohibition & The Hardware Pull-Up Solution
+1. **Driver Limitation**: In Zephyr's DesignWare GPIO driver (`gpio_dw.c`), passing `GPIO_PULL_UP` or `GPIO_PULL_DOWN` strictly returns `-ENOTSUP` (-134).
+2. **Hardware Reality**: The board has NO external pull-up resistors on `SW2`. Without internal pull-ups, the pins float, resulting in random or stuck readings.
+3. **Hardware Activation**: To activate the internal pull-up resistor on `LPGPIO` pins, write directly to the SoC Pad Control block:
+   ```c
+   #define LPGPIO_PADCTRL_BASE 0x42007000
+   /* READ_ENABLE (0x01) | SCHMITT (0x02) | PULL_UP (0x08) | 4MA (0x20) = 0x2B */
+   #define PADCTRL_VAL_PULL_UP (0x01U | 0x02U | 0x08U | 0x20U)
 
-> [!CAUTION]
-> **NEVER pass `GPIO_PULL_UP` or `GPIO_PULL_DOWN` to `gpio_pin_configure()` on LPGPIO!**
-> - If passed, `gpio_pin_configure()` returns `-ENOTSUP` (-134).
-> - The pin direction register (`SWPORTA_DDR`) is **never configured**.
+   volatile uint32_t *pad_ctrl = (volatile uint32_t *)LPGPIO_PADCTRL_BASE;
+   for (int i = 0; i < 5; i++) {
+       pad_ctrl[i] = PADCTRL_VAL_PULL_UP;
+   }
+   ```
+4. **Zephyr Pin Configuration**: Configure Zephyr pins as standard `GPIO_INPUT` (without software pull flags):
+   ```c
+   gpio_pin_configure(port, pin, GPIO_INPUT);
+   ```
 > - Subsequent `gpio_pin_interrupt_configure()` fails with `-EINVAL` (-22).
 > - The interrupt callback is never called, and polling returns floating/stuck values!
 
@@ -110,3 +114,4 @@ west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_he /mnt/c/Users/test/.g
 west flash
 ```
 *(The repository's automated `scripts/app-write-mram` wrapper will automatically terminate any conflicting terminal sessions and verify 100% burn).*
+
