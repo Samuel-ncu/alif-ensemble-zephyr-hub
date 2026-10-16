@@ -1,0 +1,108 @@
+# Example 04: SEGGER RTT Real-Time Logging (Zero-Switch Debugging)
+
+This example demonstrates **SEGGER Real-Time Transfer (RTT)** logging and console communication on the **Alif Semiconductor Ensemble E8 / E7** fusion processors using Zephyr RTOS.
+
+---
+
+## ⚡ The Zero-Switch Breakthrough for Alif DevKits
+
+On the **Alif E8 DevKit**, the physical 3-position slide switch **`SW4`** routes the onboard J-Link CDC virtual COM port:
+- **`SE` (Top position)**: Required for bootloader ISP flashing (`west flash`).
+- **`UART2` (Center position)**: Required for viewing standard UART `printf()` / `printk()` serial logs.
+
+In standard workflows, developers must repeatedly flip `SW4` to `SE` to flash firmware, then flip it down to `UART2` to see output, and flip it back up to flash again.
+
+### 🚀 Why SEGGER RTT Changes Everything:
+1. **Zero Switch Toggling**: RTT transfers data bi-directionally directly through the SWD/JTAG debug probe and an in-memory ring buffer (`_SEGGER_RTT` in SRAM). **`SW4` can remain on `SE` (Top) at all times!**
+2. **Zero Baud Rate Bottleneck**: Eliminates standard 115,200 baud serialization delays; messages transfer in microseconds with negligible CPU cycles.
+3. **Dual Output Support**: Zephyr routes console logs to **both** SEGGER RTT and physical `UART2`, allowing simultaneous viewing.
+4. **Bi-Directional Interactive Echo**: Host can send keystrokes into the target via RTT down-buffers (`SEGGER_RTT_GetKey()`).
+
+---
+
+## 🎯 Features
+
+- **SoC Target**: Alif Ensemble E8 (`AE822FA0E5597LS0`) / E7 (`AE722F80F55D5LS`)
+- **Core Target**: Cortex-M55 RTSS-HE
+- **Console Backend**: SEGGER RTT (`CONFIG_RTT_CONSOLE=y`, `CONFIG_USE_SEGGER_RTT=y`)
+- **Dual Output**: Standard UART2 (`CONFIG_UART_CONSOLE=y`) + SEGGER RTT
+- **Visual Heartbeat**: On-board RGB LED toggles Cyan (`LED1_G` + `LED1_B`) every second
+- **Interactive Feedback**: On-board LED flashes Purple (`LED1_R` + `LED1_B`) when keystrokes are received via RTT
+- **RTT Buffer Location**: Control Block `_SEGGER_RTT` dynamically located in SRAM (`0x20000410`)
+
+---
+
+## 🔌 Hardware Setup
+
+1. **USB Cable**: Connect host PC to the **`PRG`** USB Type-C connector on the Alif DevKit.
+2. **Switch `SW4`**: Set to **`SE` (Top position)**. You do **not** need to change it!
+
+---
+
+## 🚀 Build and Flash Instructions
+
+### 1. Build the Binary
+From your Zephyr workspace:
+```bash
+cd ~/alif/sdk-alif/zephyr
+source ~/alif_venv/bin/activate
+export ZEPHYR_TOOLCHAIN_VARIANT=zephyr
+export ZEPHYR_SDK_INSTALL_DIR=/home/user/zephyr-sdk-0.16.8
+export ALIF_SE_TOOLS_DIR=/home/user/alif/alif_security_toolkit/toolkit
+
+# Build for Alif E8 DevKit RTSS-HE
+west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_he examples/04_hello_rtt
+```
+
+### 2. Flash to MRAM
+With `SW4` in the **`SE` (Top)** position:
+```bash
+west flash
+```
+
+---
+
+## 🖥️ How to View RTT Real-Time Logs
+
+### Method 1: J-Link RTT Viewer (Windows GUI - Recommended)
+1. Launch **J-Link RTT Viewer** (from Start Menu or `C:\Program Files\SEGGER\JLink\JLinkRTTViewer.exe`).
+2. Configure Connection:
+   - **Connection to J-Link**: USB
+   - **Specify Target Device**: `AE822FA0E5597LS0_M55_HE` (or `AE722F80F55D5_HE`)
+   - **Target Interface & Speed**: `SWD`, `4000 kHz`
+   - **RTT Control Block**: Select `Auto Detection`
+3. Click **OK**.
+4. The terminal will immediately display formatted ANSI color logs from the Alif E8!
+5. In the bottom input bar of RTT Viewer, type any character (e.g., `A`, `B`, `1`) and press Enter to observe interactive echo and purple LED flashes!
+
+---
+
+### Method 2: J-Link RTT Client / Telnet
+If J-Link GDB Server or JLinkExe is running:
+```bash
+# Connect to J-Link RTT Telnet Port
+telnet localhost 19021
+```
+
+---
+
+## 🔍 Expected Console Output
+
+```text
+===============================================================
+⚡ Alif Ensemble E8 - SEGGER RTT High-Speed Logging Active ⚡
+ Target Board : alif_e8_dk
+ Architecture : ARM Cortex-M55 (RTSS-HE)
+ >> Zero-Switch Mode: SW4 can remain on SE (Top) at all times!
+ >> RTT Channel 0 is streaming directly through J-Link RAM buffer.
+===============================================================
+
+[INFO] SEGGER RTT Up-Buffer initialized at 0x20000410
+[INFO] Type any character in J-Link RTT Viewer to test interactive echo.
+
+[RTT #0000] Uptime: 1002 ms | Heartbeat LED: ON  | System OK
+[RTT #0001] Uptime: 2002 ms | Heartbeat LED: OFF | System OK
+[RTT #0002] Uptime: 3002 ms | Heartbeat LED: ON  | System OK
+>>> [RTT RX] Received key from host: 'H' (0x48) <<<
+[RTT #0003] Uptime: 4002 ms | Heartbeat LED: OFF | System OK
+```

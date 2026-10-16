@@ -17,7 +17,8 @@ This repository serves as a knowledge and execution hub for AI Coding Agents (su
 ├── examples/
 │   ├── 01_hello_world/          # Verified Example 01: UART Console Output
 │   ├── 02_blinky/               # Verified Example 02: GPIO LED1_G 1Hz Toggle
-│   └── 03_button/               # Verified Example 03: SW2 5-Way Joystick Interrupt
+│   ├── 03_button/               # Verified Example 03: SW2 5-Way Joystick Interrupt
+│   └── 04_hello_rtt/            # Example 04: SEGGER RTT Real-Time Logging (Zero SW4 Switch)
 ├── scripts/
 │   └── app-write-mram           # Automated serial unlocking flash wrapper
 ├── LICENSE                      # Apache License 2.0

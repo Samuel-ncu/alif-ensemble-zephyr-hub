@@ -204,7 +204,7 @@ Make executable: `chmod +x app-gen-toc app-write-mram tools-config`
 >    /* Forbidden: Passing GPIO_PULL_UP returns -ENOTSUP and breaks interrupts */
 >    ```
 > 2. **Interrupt Configuration**: Set `GPIO_INT_EDGE_BOTH` or `GPIO_INT_EDGE_FALLING` AFTER the pin has been successfully set to `GPIO_INPUT`.
-> 3. **LED Polarity**: `LED1_G` on `GPIO6_4` is an active-low circuit (anode to 3.3V, cathode to pin). Writing `0` turns it ON; writing `1` turns it OFF.
+> 3. **LED Polarity**: `LED1_G` (`GPIO6_4`), `LED1_R` (`GPIO6_2`), and `LED1_B` (`GPIO6_6`) are verified **Active-High** circuits (`1` = ON, `0` = OFF).
 > 
 > See the complete verified hardware mappings in [HARDWARE_GPIO_REFERENCE.md](references/HARDWARE_GPIO_REFERENCE.md).
 
@@ -221,22 +221,28 @@ Target board qualifiers:
 #### Option A: Example 1 - Hello World (UART Console Output)
 ```bash
 cd ~/alif/sdk-alif/zephyr
-west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_he samples/hello_world
+west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_he examples/01_hello_world
 ```
 
 #### Option B: Example 2 - Blinky (LED1_G Green LED Toggle)
 ```bash
 cd ~/alif/sdk-alif/zephyr
-west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_he samples/basic/blinky
+west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_he examples/02_blinky
 ```
 
 #### Option C: Example 3 - Button (SW2 5-Way Joystick Navigation & LED Control)
 *Note: On the Alif E8 DevKit (Rev A0), user input is provided by `SW2` (a 5-way joystick connected to `LPGPIO_0..4`: Up, Down, Left, Right, Center Push), which acts as active-low input.*
 ```bash
 cd ~/alif/sdk-alif/zephyr
-west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_he samples/basic/button
+west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_he examples/03_button
 ```
-*(Or point to `examples/03_button` in your repository)*
+
+#### Option D: Example 4 - SEGGER RTT (Zero-Switch High-Speed Logging)
+*Note: RTT streams real-time logs directly through J-Link RAM ring buffers without ever flipping SW4 between SE and UART2!*
+```bash
+cd ~/alif/sdk-alif/zephyr
+west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_he examples/04_hello_rtt
+```
 
 ### 5.2 Flash to MRAM
 1. Verify `SW4` switch is in the **`SE` (Top)** position.
