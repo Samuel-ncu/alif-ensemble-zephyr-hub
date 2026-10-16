@@ -22,7 +22,7 @@ This repository provides production-ready, deterministic **AI Agent Skills (`SKI
 | **[`01_hello_world`](examples/01_hello_world)** | `hello` | UART2 console output, Secure Enclave (SES) boot verification table, and loop logging. | M55-HE / M55-HP | ✅ Verified |
 | **[`02_blinky`](examples/02_blinky)** | `blinky` | Controls on-board Green LED (`LED1_G`, `GPIO6_4`) at 1 Hz with status logging. | M55-HE | ✅ Verified |
 | **[`03_button`](examples/03_button)** | *(Hardware IRQ)* | SW2 5-way navigation joystick (`LPGPIO_0..4`) with hardware interrupts & active-low polling controlling LED. | M55-HE | ✅ Verified |
-| **[`04_hello_rtt`](examples/04_hello_rtt)** | `hello_rtt` | SEGGER RTT real-time logging without toggling physical `SW4` UART switches. | M55-HE | 🔨 Built & Ready |
+| **[`04_hello_rtt`](examples/04_hello_rtt)** | `hello_rtt` | SEGGER RTT real-time logging without toggling physical `SW4` UART switches. | M55-HP / M55-HE | ✅ Verified |
 | **`dual_core_ipc`** | *(CMSIS-RTOS)* | Asymmetric Multiprocessing (AMP) with M55-HE & M55-HP Mailbox/IPM communication. | Dual M55 | 📋 Planned |
 
 ---

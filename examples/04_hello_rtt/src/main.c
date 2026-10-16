@@ -45,18 +45,27 @@ int main(void)
 		set_rgb(0, 0, 0);
 	}
 
-	/* 2. Welcome Banner over RTT & Console */
-	printf("\n" RTT_CTRL_CLEAR);
-	printf(RTT_CTRL_TEXT_BRIGHT_CYAN "===============================================================\n" RTT_CTRL_RESET);
-	printf(RTT_CTRL_TEXT_BRIGHT_GREEN "⚡ Alif Ensemble E8 - SEGGER RTT High-Speed Logging Active ⚡\n" RTT_CTRL_RESET);
-	printf(RTT_CTRL_TEXT_BRIGHT_WHITE " Target Board : %s\n" RTT_CTRL_RESET, CONFIG_BOARD);
-	printf(RTT_CTRL_TEXT_BRIGHT_WHITE " Architecture : ARM Cortex-M55 (RTSS-HE)\n" RTT_CTRL_RESET);
-	printf(RTT_CTRL_TEXT_BRIGHT_YELLOW " >> Zero-Switch Mode: SW4 can remain on SE (Top) at all times!\n" RTT_CTRL_RESET);
-	printf(RTT_CTRL_TEXT_BRIGHT_YELLOW " >> RTT Channel 0 is streaming directly through J-Link RAM buffer.\n" RTT_CTRL_RESET);
-	printf(RTT_CTRL_TEXT_BRIGHT_CYAN "===============================================================\n\n" RTT_CTRL_RESET);
+	/* Startup flash to indicate firmware has started: 3 quick Blue flashes */
+	for (int i = 0; i < 3; i++) {
+		set_rgb(0, 0, 1);
+		k_msleep(100);
+		set_rgb(0, 0, 0);
+		k_msleep(100);
+	}
 
-	printf(RTT_CTRL_TEXT_BRIGHT_MAGENTA "[INFO] SEGGER RTT Up-Buffer initialized at %p\n" RTT_CTRL_RESET, &_SEGGER_RTT);
-	printf("[INFO] Type any character in J-Link RTT Viewer to test interactive echo.\n\n");
+	/* 2. Welcome Banner over RTT */
+	printf("\n\n===============================================================\n");
+	printf("⚡ Alif Ensemble E8 - SEGGER RTT High-Speed Logging Active ⚡\n");
+	printf(" Target Board : %s\n", CONFIG_BOARD);
+	printf(" Architecture : ARM Cortex-M55 (%s)\n",
+#if defined(CONFIG_SOC_AE822FA0E5597XX0_RTSS_HP)
+	       "RTSS-HP"
+#else
+	       "RTSS-HE"
+#endif
+	);
+	printf(" RTT Buffer   : Local 0x%p\n", &_SEGGER_RTT);
+	printf("===============================================================\n\n");
 
 	while (1) {
 		int64_t uptime_ms = k_uptime_get();
@@ -66,20 +75,18 @@ int main(void)
 		set_rgb(0, led_state ? 1 : 0, led_state ? 1 : 0);
 
 		/* Print formatted heartbeat telemetry via RTT */
-		printf(RTT_CTRL_TEXT_BRIGHT_GREEN "[RTT #%04u]" RTT_CTRL_RESET
-		       " Uptime: " RTT_CTRL_TEXT_BRIGHT_YELLOW "%lld ms" RTT_CTRL_RESET
-		       " | Heartbeat LED: %s | System OK\n",
+		printf("[RTT #%04u] Uptime: %lld ms | Heartbeat LED: %s | System OK\n",
 		       count++, uptime_ms, led_state ? "ON " : "OFF");
 
 		/* Check for interactive keystrokes received from J-Link RTT Viewer / Client */
 		if (SEGGER_RTT_HasKey()) {
 			int key = SEGGER_RTT_GetKey();
-			printf(RTT_CTRL_TEXT_BRIGHT_RED ">>> [RTT RX] Received key from host: '%c' (0x%02X) <<<\n" RTT_CTRL_RESET,
+			printf(">>> [RTT RX] Received key from host: '%c' (0x%02X) <<<\n",
 			       (key >= 32 && key <= 126) ? (char)key : '?', (unsigned char)key);
 
 			/* Flash Purple/Magenta on keypress */
 			set_rgb(1, 0, 1);
-			k_msleep(50);
+			k_msleep(80);
 		}
 
 		k_msleep(1000);

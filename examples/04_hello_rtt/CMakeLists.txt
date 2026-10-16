@@ -3,3 +3,4 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(alif_hello_rtt)
 
 target_sources(app PRIVATE src/main.c)
+

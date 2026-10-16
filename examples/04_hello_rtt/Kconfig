@@ -7,3 +7,4 @@ config HAS_SEGGER_RTT
 	default y
 
 source "Kconfig.zephyr"
+

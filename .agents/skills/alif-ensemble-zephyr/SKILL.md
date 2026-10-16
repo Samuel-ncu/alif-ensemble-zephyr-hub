@@ -237,11 +237,12 @@ cd ~/alif/sdk-alif/zephyr
 west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_he examples/03_button
 ```
 
-#### Option D: Example 4 - SEGGER RTT (Zero-Switch High-Speed Logging)
-*Note: RTT streams real-time logs directly through J-Link RAM ring buffers without ever flipping SW4 between SE and UART2!*
+#### Option D: Example 4 - SEGGER RTT (High-Speed Debug Logging)
+*Note: RTT streams real-time logs directly through J-Link RAM ring buffers (`_SEGGER_RTT` in DTCM).*
 ```bash
 cd ~/alif/sdk-alif/zephyr
-west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_he examples/04_hello_rtt
+# Build for RTSS-HP (Cortex-M55 HP) for native J-Link V7.80c AP[0] support
+west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp examples/04_hello_rtt
 ```
 
 ### 5.2 Flash to MRAM
@@ -283,6 +284,16 @@ west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_he examples/04_hello_rt
      - For **Button**: Press `SW2` directions to see `[SW2 IRQ] Direction triggered! LED: ON`
    - *(To exit picocom: press `Ctrl+A`, then `Ctrl+X`)*
 
+4. **Verify SEGGER RTT Real-Time Logs**:
+   - Slide `SW4` to **`UART2` (Center)** and press **`RESET`** on the board.
+   - On boot, the RGB LED will flash Blue 3 times, then begin a 1 Hz Cyan heartbeat (`LED1_G` + `LED1_B`).
+   - Open **J-Link RTT Viewer** on Windows:
+     - **Specify Target Device**: `AE722F80F55D5_HP`
+     - **Target Interface & Speed**: `JTAG`, `4000 kHz`
+     - **RTT Control Block**: Select `Address`, enter **`0x20000410`**
+   - Confirm immediate ANSI formatted startup banner and 1 Hz uptime heartbeat telemetry.
+   - Type input in the bottom bar and hit Enter to observe instant key echo and purple LED flashes.
+
 ---
 
 ## 6. Troubleshooting Checklist
@@ -298,6 +309,11 @@ west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_he examples/04_hello_rt
 | `west flash` fails to connect or timeouts | Terminal (`picocom`) is holding open `/dev/ttyACM0`, or `SW4` is in `UART` position. | Run `pkill -9 picocom`, slide `SW4` back to **`SE`**, and retry `west flash`. |
 | Flashing succeeds (100%), but SES reports `Bad Image` | `zephyr.bin` was not included in MRAM burn. | Ensure the `application_package.ds` fix in Section 4.4 is applied so `zephyr.bin` is burned at `0x80000000`. |
 | Windows shows USB Device Descriptor Request Failed | Cable is plugged into the `MCU` port. | Move the cable to the **`PRG`** port. |
+| RTT Viewer shows `Could not find core in Coresight setup` (`AP[4]: Skipped. No ROM table`) | On Alif E8 (`AE822`), J-Link V7.80c profile `AE722F80F55D5_HE` maps to `AP[4]` which has no ROM table. | Target `rtss_hp` and select `AE722F80F55D5_HP` in J-Link (maps to CoreSight `AP[0]`). If using J-Link >= V8.86, select `AE822FA0E5597LS0_M55_HE`. |
+| RTT Viewer outputs high-ASCII garbage & `Terminal change character (IAC)` | RTT control block address was entered as system global AXI address (`0x58800410`). | Use CPU DTCM local address **`0x20000410`**. J-Link connects through CoreSight AHB-AP to the core's private memory map. |
+| RTT Viewer shows 0 Bytes / `Connection lost` / No logs | `CONFIG_UART_CONSOLE=y` overrode `stdout` hook in Zephyr console driver. | Set `CONFIG_UART_CONSOLE=n` and `CONFIG_RTT_CONSOLE=y` in `prj.conf` so `printf()` outputs directly to RTT ring buffer. |
+| `usbipd: Attach Request failed - Device busy (exported)` | J-Link RTT Viewer is holding the Windows USB interface. | Close J-Link RTT Viewer before attaching to WSL. If stuck, run `usbipd unbind -b <BUSID>`, replug USB cable, then re-attach. |
+
 
 
 
