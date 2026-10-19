@@ -12,3 +12,4 @@
 &gpio6 {
 	status = "okay";
 };
+
