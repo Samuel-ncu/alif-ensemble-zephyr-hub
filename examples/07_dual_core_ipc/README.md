@@ -111,7 +111,7 @@ cd /mnt/c/Users/test/.gemini/antigravity/scratch/alif_vscode-template/examples/0
 2. **Reset Board**: Press `SW1` (RESET).
 3. **Open SEGGER RTT Viewer**:
    - Target Device: **`AE722F80F55D5_HP`**
-   - Target Interface: **`SWD`** (4000 kHz)
+   - Target Interface & Speed: **`JTAG`**, **`4000 kHz`**
    - RTT Control Block: **Address `0x20000410`**
 4. **Interactive Commands**:
    - `[p]` : Send single Ping and display hardware round-trip latency ($\mu$s).
@@ -150,3 +150,4 @@ Hardware Bus: ARM MHUv2 Mailbox (Shared Interconnect)
     - Total Burst Time  : 312 us (0 ms)
     - IPC Throughput    : 320512.8 transactions / sec
 ```
+

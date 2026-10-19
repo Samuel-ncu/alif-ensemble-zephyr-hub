@@ -51,3 +51,4 @@ echo " 1. Flip physical switch SW4 to UART2 (Center position)."
 echo " 2. Press RESET button on DevKit."
 echo " 3. Launch J-Link RTT Viewer connecting to AE722F80F55D5_HP @ 0x20000410"
 echo "=========================================================="
+

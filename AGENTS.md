@@ -96,7 +96,9 @@ When an AI Agent is tasked with creating, building, flashing, or debugging appli
 
 ### 6. Zephyr Kconfig Rules for Alif Applications
 * **SEGGER RTT Declaration**: Must include `config HAS_SEGGER_RTT default y` in the application's `Kconfig` to unlock RTT driver modules.
-* **Console Dependencies**: Always enable `CONFIG_SERIAL=y` and `CONFIG_CONSOLE=y` when using `CONFIG_USE_SEGGER_RTT=y` and `CONFIG_RTT_CONSOLE=y`.
+* **Console Dependencies**: When using `CONFIG_USE_SEGGER_RTT=y` and `CONFIG_RTT_CONSOLE=y`:
+  * Always enable `CONFIG_PRINTK=y`, `CONFIG_SERIAL=y`, `CONFIG_CONSOLE=y`, and `CONFIG_STDOUT_CONSOLE=y`.
+  * **Mandatory**: Must explicitly set `CONFIG_UART_CONSOLE=n` in `prj.conf`. If omitted, Zephyr defaults `CONFIG_UART_CONSOLE=y`, redirecting all stdout/printk to UART4 and leaving J-Link RTT Viewer completely silent with 0 bytes!
 * **Ethos-U Guard**: If Ethos-U NPU is not used, set `CONFIG_ARM_ETHOS_U=n` in `prj.conf` to prevent CMake build errors regarding undefined log levels.
 
 ### 7. Physical Switch `SW4` State Machine

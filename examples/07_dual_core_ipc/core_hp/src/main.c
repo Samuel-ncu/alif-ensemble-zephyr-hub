@@ -7,8 +7,8 @@
  * Inter-Processor Communication over ARM MHUv2 Mailbox & Hardware Semaphores
  */
 
+#include <stdio.h>
 #include <zephyr/kernel.h>
-#include <zephyr/sys/printk.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/ipm.h>
 #include <SEGGER_RTT.h>
@@ -115,26 +115,27 @@ static int ipc_transact(uint8_t opcode, uint16_t payload, uint32_t *resp_out, ui
 
 static void print_banner(void)
 {
-	printk("\n");
-	printk("=====================================================\n");
-	printk("  Alif Ensemble Dual-Core IPC Master (M55-HP)        \n");
-	printk("  Inter-Processor Communication via ARM MHUv2        \n");
-	printk("  Telemetry Console @ 0x20000410 | CoreSight AP[0]   \n");
-	printk("=====================================================\n");
-	printk("Master Core : Cortex-M55 HP (400 MHz)\n");
-	printk("Worker Core : Cortex-M55 HE (160 MHz)\n");
-	printk("Hardware Bus: ARM MHUv2 Mailbox (Shared Interconnect)\n");
-	printk("  - Sender Register   : 0x40090000 (rtsshe_rtsshp_mhu0_s)\n");
-	printk("  - Receiver Register : 0x40080000 (rtsshp_rtsshe_mhu0_r)\n");
-	printk("=====================================================\n");
-	printk("Interactive RTT Commands:\n");
-	printk("  [p] : Send Single Ping & Measure Hardware Latency\n");
-	printk("  [l] : Remote Toggle M55-HE Worker Green LED (P6_4)\n");
-	printk("  [b] : Run 100-Packet Burst Stress Benchmark\n");
-	printk("  [s] : Query Remote M55-HE Status & Metrics\n");
-	printk("  [a] : Toggle Auto-Heartbeat Telemetry (Default: ON)\n");
-	printk("  [h] : Show this Help Menu\n");
-	printk("=====================================================\n\n");
+	printf("\n\n");
+	printf("=====================================================\n");
+	printf("  Alif Ensemble Dual-Core IPC Master (M55-HP)        \n");
+	printf("  Inter-Processor Communication via ARM MHUv2        \n");
+	printf("  Telemetry Console @ 0x20000410 | CoreSight AP[0]   \n");
+	printf("=====================================================\n");
+	printf("Master Core : Cortex-M55 HP (400 MHz)\n");
+	printf("Worker Core : Cortex-M55 HE (160 MHz)\n");
+	printf("Hardware Bus: ARM MHUv2 Mailbox (Shared Interconnect)\n");
+	printf("  - Sender Register   : 0x40090000 (rtsshe_rtsshp_mhu0_s)\n");
+	printf("  - Receiver Register : 0x40080000 (rtsshp_rtsshe_mhu0_r)\n");
+	printf("=====================================================\n");
+	printf("Interactive Commands:\n");
+	printf("  [p] : Send Single Ping & Measure Hardware Latency\n");
+	printf("  [l] : Remote Toggle M55-HE Worker Green LED (P6_4)\n");
+	printf("  [b] : Run 100-Packet Burst Stress Benchmark\n");
+	printf("  [s] : Query Remote M55-HE Status & Metrics\n");
+	printf("  [a] : Toggle Auto-Heartbeat Telemetry (Default: ON)\n");
+	printf("  [h] : Show this Help Menu\n");
+	printf("=====================================================\n\n");
+	fflush(stdout);
 }
 
 static void do_single_ping(void)
@@ -142,7 +143,7 @@ static void do_single_ping(void)
 	uint32_t resp = 0;
 	uint32_t latency = 0;
 
-	printk("[CMD: Ping] Sending Ping packet (Seq: #%u)...\n", (uint8_t)(g_seq + 1));
+	printf("[CMD: Ping] Sending Ping packet (Seq: #%u)...\n", (uint8_t)(g_seq + 1));
 	int ret = ipc_transact(IPC_OP_PING, 0xABCD, &resp, &latency);
 
 	if (ret == 0) {
@@ -150,19 +151,20 @@ static void do_single_ping(void)
 		uint8_t resp_seq = IPC_GET_SEQ(resp);
 		uint16_t resp_payload = IPC_GET_PAYLOAD(resp);
 
-		printk("  --> [SUCCESS] Pong received from M55-HE!\n");
-		printk("      - Round-Trip Latency: %u us\n", latency);
-		printk("      - Remote Opcode     : 0x%02X (%s)\n", resp_op,
+		printf("  --> [SUCCESS] Pong received from M55-HE!\n");
+		printf("      - Round-Trip Latency: %u us\n", latency);
+		printf("      - Remote Opcode     : 0x%02X (%s)\n", resp_op,
 		       (resp_op == IPC_RESP_PONG) ? "IPC_RESP_PONG" : "UNKNOWN");
-		printk("      - Sequence Matched  : #%u (Sent: #%u)\n", resp_seq, g_seq);
-		printk("      - Remote RX Counter : %u packets\n", resp_payload);
+		printf("      - Sequence Matched  : #%u (Sent: #%u)\n", resp_seq, g_seq);
+		printf("      - Remote RX Counter : %u packets\n", resp_payload);
 	} else if (ret == -ETIMEDOUT) {
-		printk("  --> [TIMEOUT] No response from M55-HE within 250ms!\n");
-		printk("      (Ensure Core HE binary is booted into MRAM @ 0x80000000)\n");
+		printf("  --> [TIMEOUT] No response from M55-HE within 250ms!\n");
+		printf("      (Ensure Core HE binary is booted into MRAM @ 0x80000000)\n");
 		gpio_pin_toggle_dt(&led_red);
 	} else {
-		printk("  --> [ERROR] ipm_send failed with code %d\n", ret);
+		printf("  --> [ERROR] ipm_send failed with code %d\n", ret);
 	}
+	fflush(stdout);
 }
 
 static void do_toggle_remote_led(void)
@@ -170,16 +172,17 @@ static void do_toggle_remote_led(void)
 	uint32_t resp = 0;
 	uint32_t latency = 0;
 
-	printk("[CMD: LED] Sending Remote LED TOGGLE command to M55-HE...\n");
+	printf("[CMD: LED] Sending Remote LED TOGGLE command to M55-HE...\n");
 	int ret = ipc_transact(IPC_OP_LED_SET, 2, &resp, &latency);
 
 	if (ret == 0) {
 		uint16_t state = IPC_GET_PAYLOAD(resp);
-		printk("  --> [SUCCESS] Remote Green LED state is now: %s (Latency: %u us)\n",
+		printf("  --> [SUCCESS] Remote Green LED state is now: %s (Latency: %u us)\n",
 		       state ? "ON" : "OFF", latency);
 	} else {
-		printk("  --> [FAIL] LED toggle failed (err: %d)\n", ret);
+		printf("  --> [FAIL] LED toggle failed (err: %d)\n", ret);
 	}
+	fflush(stdout);
 }
 
 static void do_query_metrics(void)
@@ -187,19 +190,20 @@ static void do_query_metrics(void)
 	uint32_t resp = 0;
 	uint32_t latency = 0;
 
-	printk("[CMD: Metrics] Querying M55-HE system telemetry...\n");
+	printf("[CMD: Metrics] Querying M55-HE system telemetry...\n");
 	int ret = ipc_transact(IPC_OP_GET_METRICS, 0, &resp, &latency);
 
 	if (ret == 0) {
 		uint16_t rx_pkts = IPC_GET_PAYLOAD(resp);
-		printk("  --> [TELEMETRY REPORT]\n");
-		printk("      - Master Total Sent     : %u pkts\n", g_total_sent);
-		printk("      - Master Total Received : %u pkts\n", g_total_received);
-		printk("      - Worker Total Packets  : %u pkts\n", rx_pkts);
-		printk("      - Last Query Latency    : %u us\n", latency);
+		printf("  --> [TELEMETRY REPORT]\n");
+		printf("      - Master Total Sent     : %u pkts\n", g_total_sent);
+		printf("      - Master Total Received : %u pkts\n", g_total_received);
+		printf("      - Worker Total Packets  : %u pkts\n", rx_pkts);
+		printf("      - Last Query Latency    : %u us\n", latency);
 	} else {
-		printk("  --> [FAIL] Query metrics failed (err: %d)\n", ret);
+		printf("  --> [FAIL] Query metrics failed (err: %d)\n", ret);
 	}
+	fflush(stdout);
 }
 
 static void do_burst_benchmark(void)
@@ -210,7 +214,8 @@ static void do_burst_benchmark(void)
 	uint64_t total_us = 0;
 	int success_count = 0;
 
-	printk("\n>>> [BENCHMARK] Starting %d-packet back-to-back IPC burst test...\n", BURST_COUNT);
+	printf("\n>>> [BENCHMARK] Starting %d-packet back-to-back IPC burst test...\n", BURST_COUNT);
+	fflush(stdout);
 
 	uint32_t t_burst_start = k_cycle_get_32();
 
@@ -232,20 +237,21 @@ static void do_burst_benchmark(void)
 	uint32_t t_burst_end = k_cycle_get_32();
 	uint32_t burst_total_us = k_cyc_to_us_floor32(t_burst_end - t_burst_start);
 
-	printk(">>> [BENCHMARK RESULTS]\n");
-	printk("    - Delivered Packets : %d / %d (Success Rate: %.1f%%)\n",
-	       success_count, BURST_COUNT, (float)success_count * 100.0f / (float)BURST_COUNT);
+	printf(">>> [BENCHMARK RESULTS]\n");
+	printf("    - Delivered Packets : %d / %d (Success Rate: %d%%)\n",
+	       success_count, BURST_COUNT, (success_count * 100) / BURST_COUNT);
 
-	if (success_count > 0) {
+	if (success_count > 0 && burst_total_us > 0) {
 		uint32_t avg_us = (uint32_t)(total_us / success_count);
-		float throughput = (float)success_count / ((float)burst_total_us / 1000000.0f);
+		uint32_t throughput = (uint32_t)(((uint64_t)success_count * 1000000ULL) / burst_total_us);
 
-		printk("    - Min Latency       : %u us\n", min_us);
-		printk("    - Avg Latency       : %u us\n", avg_us);
-		printk("    - Max Latency       : %u us\n", max_us);
-		printk("    - Total Burst Time  : %u us (%u ms)\n", burst_total_us, burst_total_us / 1000);
-		printk("    - IPC Throughput    : %.1f transactions / sec\n\n", throughput);
+		printf("    - Min Latency       : %u us\n", min_us);
+		printf("    - Avg Latency       : %u us\n", avg_us);
+		printf("    - Max Latency       : %u us\n", max_us);
+		printf("    - Total Burst Time  : %u us (%u ms)\n", burst_total_us, burst_total_us / 1000);
+		printf("    - IPC Throughput    : %u transactions / sec\n\n", throughput);
 	}
+	fflush(stdout);
 }
 
 int main(void)
@@ -265,7 +271,7 @@ int main(void)
 	mhu_s = DEVICE_DT_GET(DT_ALIAS(rtssmhu0s));
 
 	if (!device_is_ready(mhu_r) || !device_is_ready(mhu_s)) {
-		printk("[Fatal] MHU0 devices not ready!\n");
+		printf("[Fatal] MHU0 devices not ready!\n");
 		return -1;
 	}
 
@@ -275,7 +281,7 @@ int main(void)
 
 	ret = ipm_set_enabled(mhu_r, true);
 	if (ret != 0) {
-		printk("[Fatal] Failed to enable MHU0 RX interrupt: %d\n", ret);
+		printf("[Fatal] Failed to enable MHU0 RX interrupt: %d\n", ret);
 		return -1;
 	}
 
@@ -313,8 +319,9 @@ int main(void)
 			case 'a':
 			case 'A':
 				g_auto_heartbeat = !g_auto_heartbeat;
-				printk("[CONFIG] Auto-Heartbeat Telemetry is now: %s\n",
+				printf("[CONFIG] Auto-Heartbeat Telemetry is now: %s\n",
 				       g_auto_heartbeat ? "ENABLED" : "PAUSED");
+				fflush(stdout);
 				break;
 			case 'h':
 			case 'H':
@@ -338,15 +345,15 @@ int main(void)
 			ret = ipc_transact(IPC_OP_PING, (uint16_t)g_seq, &resp, &latency);
 			if (ret == 0) {
 				uint16_t worker_rx = IPC_GET_PAYLOAD(resp);
-				printk("[Heartbeat #%03u] Pong OK | RTT Latency: %u us | Remote RX Count: %u\n",
+				printf("[Heartbeat #%03u] Pong OK | RTT Latency: %u us | Remote RX Count: %u\n",
 				       g_seq, latency, worker_rx);
 			} else {
-				printk("[Heartbeat #%03u] Timeout waiting for M55-HE response.\n", g_seq);
+				printf("[Heartbeat #%03u] Timeout waiting for M55-HE response.\n", g_seq);
 				gpio_pin_toggle_dt(&led_red);
 			}
+			fflush(stdout);
 		}
 	}
 
 	return 0;
 }
-

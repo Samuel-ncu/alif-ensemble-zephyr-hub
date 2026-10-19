@@ -13,5 +13,9 @@
     "cmake.sourceDirectory": "C:/Users/test/.gemini/antigravity/scratch/alif_vscode-template/tmp/DevKit-E8-HE/default",
     "clangd.arguments": [
         "--compile-commands-dir=c:\\Users\\test\\.gemini\\antigravity\\scratch\\alif_vscode-template\\out\\blinky\\DevKit-E8-HE\\debug"
-    ]
+    ],
+    "memory-inspector.addressPadding": "32bit",
+    "memory-inspector.groupings.groupsPerRow": "Autofit",
+    "memory-inspector.groupings.MAUsPerGroup": 4,
+    "memory-inspector.scrollingBehavior": "Auto-Append"
 }
