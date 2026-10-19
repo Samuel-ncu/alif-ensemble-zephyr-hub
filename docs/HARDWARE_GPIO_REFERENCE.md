@@ -130,3 +130,38 @@ On the Alif Ensemble E8 DevKit, the onboard RGB LEDs (`LEDRGB1`) feature direct 
 > [!TIP]
 > **Autonomous PWM Operation**: When using UTIMER hardware PWM, the waveform is generated autonomously by the 32-bit counter with 0% CPU overhead, avoiding any software timing jitter or interrupt latency.
 
+---
+
+## 7. Inter-Processor Communication (ARM MHUv2 & Hardware Semaphores)
+
+The Alif Ensemble SoC provides dedicated ARM Message Handling Unit v2 (MHUv2) controllers and hardware semaphores for zero-copy, full-duplex inter-core communication between **Cortex-M55 HP** (`rtss_hp`) and **Cortex-M55 HE** (`rtss_he`):
+
+| Peripheral Label | Memory Address | Direction / Role | IRQ (HP / HE) | Devicetree Node Alias |
+| :--- | :--- | :--- | :--- | :--- |
+| **`MHU0_R`** | `0x40080000` | Receiver (RX) | IRQ 41 / 41 | `rtsshemhu0r` |
+| **`MHU0_S`** | `0x40090000` | Sender (TX) | IRQ 42 / 42 | `rtsshemhu0s` |
+| **`MHU1_R`** | `0x400A0000` | Receiver (RX) | IRQ 43 / 43 | `rtsshemhu1r` |
+| **`MHU1_S`** | `0x400B0000` | Sender (TX) | IRQ 44 / 44 | `rtsshemhu1s` |
+| **`HWSEM0`** | `0x4902E000` | HW Mutex / Sem | IRQ 105 | `&hwsem0` |
+| **`HWSEM1`** | `0x4902E010` | HW Mutex / Sem | IRQ 106 | `&hwsem1` |
+
+---
+
+## 8. CoreSight AP Topology & J-Link RTT Address Rules
+
+| Core Target | CoreSight Access Port | J-Link V7.80c Device Target | DTCM Base Address | Default RTT Control Block (`_SEGGER_RTT`) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Cortex-M55 HP** | **`AP[0]`** | **`AE722F80F55D5_HP`** | `0x20000000` (1024 KB) | **`0x20000410`** (Default 1KB UP / 16B DOWN)<br>**`0x20000840`** (2KB UP / 64B DOWN) |
+| **Cortex-M55 HE** | **`AP[4]`** | `AE722F80F55D5_HE` *(Requires J-Link >= V8.86 for E8)* | `0x58000000` (256 KB) | `0x58000410` |
+
+> [!IMPORTANT]
+> **RTT Control Block Mismatch Warning**:
+> If J-Link RTT Viewer connects with an address that does not match `_SEGGER_RTT` in the compiled ELF:
+> 1. Terminal window will remain blank (no welcome banner).
+> 2. Key input will fail with `WARNING: Sent 0 of 1 byte.`.
+> Always verify the exact address via:
+> ```bash
+> nm build/zephyr/zephyr.elf | grep _SEGGER_RTT
+> ```
+
+

@@ -308,13 +308,26 @@ west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp /mnt/c/Users/test/.g
    - Confirm immediate ANSI formatted startup banner and 1 Hz uptime heartbeat telemetry.
    - Type input in the bottom bar and hit Enter to observe instant key echo and purple LED flashes.
 
+5. **Verify Example 05 (Secure Enclave Services & Hardware TRNG)**:
+   - Slide `SW4` to **`UART2` (Center)** and press **`RESET`**.
+   - Open J-Link RTT Viewer with Address **`0x20000410`**.
+   - Verify SE handshake (`SUCCESS`), SE firmware revision, Silicon Part Number (`AE822FA0E5597LS0`), Lifecycle State (LCS `0x01` / `DM`), and live 2s TRNG hardware entropy stream.
+   - Test interactive key commands in Input bar: `'r'` (TRNG), `'h'` (Heartbeat), `'t'` (TOC).
+
+6. **Verify Example 06 (Hardware Universal Timer PWM & RGB Breathing)**:
+   - Slide `SW4` to **`UART2` (Center)** and press **`RESET`**.
+   - Observe onboard `LEDRGB1` execute startup 3-color self-test (Red -> Green -> Blue), then enter smooth 360° HSV Rainbow Color Wheel breathing with 0% CPU load.
+   - Open J-Link RTT Viewer with Address **`0x20000840`** (or address from `nm zephyr.elf | grep _SEGGER_RTT`).
+   - Observe live PWM duty telemetry (`R: %`, `G: %`, `B: %`).
+   - Test interactive commands: `'m'` (Cycle animation mode), `'+'` / `'-'` (Speed), `' '` (Pause), `'r'`, `'g'`, `'b'`, `'c'`, `'y'`, `'w'`, `'o'` (Direct color override).
+
 ---
 
 ## 6. Troubleshooting Checklist
 
 | Symptom | Root Cause | Solution |
 | :--- | :--- | :--- |
-| `gpio_pin_configure()` returns `-ENOTSUP` (-134), or button IRQ fails with `-EINVAL` (-22) | `GPIO_PULL_UP` or `GPIO_PULL_DOWN` was requested on Synopsys DesignWare `LPGPIO`. | Pass `GPIO_INPUT` only without pull flags. Pull-ups are hardware-managed via `pinctrl_lpgpio`. See [HARDWARE_GPIO_REFERENCE.md](references/HARDWARE_GPIO_REFERENCE.md). |
+| `gpio_pin_configure()` returns `-ENOTSUP` (-134), or button IRQ fails with `-EINVAL` (-22) | `GPIO_PULL_UP` or `GPIO_PULL_DOWN` was requested on Synopsys DesignWare `LPGPIO`. | Pass `GPIO_INPUT` only without pull flags. Pull-ups are hardware-managed via `pinctrl_lpgpio` or SoC Pad Control at `0x42007000` (`0x2B`). See [HARDWARE_GPIO_REFERENCE.md](references/HARDWARE_GPIO_REFERENCE.md). |
 | `[ERROR] /dev/ttyACM0 readSerial reporting disconnected` | **Multiple Access Conflict**: `picocom`, `minicom`, or another terminal emulator is running in background holding `/dev/ttyACM0`. Linux PySerial `select()` sees data but `read()` returns 0 bytes (stolen by picocom), throwing `SerialException` which the toolkit logs as "disconnected". | **1.** Use the enhanced `app-write-mram` wrapper (auto-runs `fuser -k -9 /dev/ttyACM0`).<br>**2.** Or manually execute `sudo fuser -k -9 /dev/ttyACM0` or `pkill -9 picocom`.<br>**3.** If USB dropped, ensure `usbipd attach --wsl Ubuntu --busid <BUSID> -a` is active. |
 | `[ERROR] Target did not respond` | `SW4` switch is not in the **`SE` (Top)** position, or board is hung executing user code. | 1. Slide `SW4` to **`SE` (Top)**.<br>2. Press the hardware **`RESET`** button once to force SE ROM ISP mode.<br>3. Retry `west flash`. |
 | `FATAL: cannot open /dev/ttyACM0` | Device disconnected, missing permissions, or bus reset. | Check Windows `usbipd list` and reattach with `usbipd attach --wsl Ubuntu --busid <BUSID> -a`. Check `sudo chmod 666 /dev/ttyACM0`. |
@@ -326,7 +339,13 @@ west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp /mnt/c/Users/test/.g
 | RTT Viewer shows `Could not find core in Coresight setup` (`AP[4]: Skipped. No ROM table`) | On Alif E8 (`AE822`), J-Link V7.80c profile `AE722F80F55D5_HE` maps to `AP[4]` which has no ROM table. | Target `rtss_hp` and select `AE722F80F55D5_HP` in J-Link (maps to CoreSight `AP[0]`). If using J-Link >= V8.86, select `AE822FA0E5597LS0_M55_HE`. |
 | RTT Viewer outputs high-ASCII garbage & `Terminal change character (IAC)` | RTT control block address was entered as system global AXI address (`0x58800410`). | Use CPU DTCM local address **`0x20000410`**. J-Link connects through CoreSight AHB-AP to the core's private memory map. |
 | RTT Viewer shows 0 Bytes / `Connection lost` / No logs | `CONFIG_UART_CONSOLE=y` overrode `stdout` hook in Zephyr console driver. | Set `CONFIG_UART_CONSOLE=n` and `CONFIG_RTT_CONSOLE=y` in `prj.conf` so `printf()` outputs directly to RTT ring buffer. |
-| `usbipd: Attach Request failed - Device busy (exported)` | J-Link RTT Viewer is holding the Windows USB interface. | Close J-Link RTT Viewer before attaching to WSL. If stuck, run `usbipd unbind -b <BUSID>`, replug USB cable, then re-attach. |
+| RTT Viewer shows blank / Keypress shows `WARNING: Sent 0 of 1 byte.` | Address mismatch. RTT Viewer is connected to `0x20000410` but the binary placed `_SEGGER_RTT` at `0x20000840` (due to custom buffer sizes), or vice versa. | Run `nm zephyr.elf \| grep _SEGGER_RTT` in WSL to check the exact symbol address. In RTT Viewer, click `File` -> `Disconnect`, then `File` -> `Connect`, and update the Address. Settings are saved in `%APPDATA%\SEGGER\JLinkRTTViewerSettings.ini`. |
+| `usbipd: Attach Request failed - Device busy (exported)` | J-Link RTT Viewer is running in Windows holding an exclusive USB handle. | Close/disconnect J-Link RTT Viewer (`Stop-Process -Name JLinkRTTViewer -Force`) before attaching to WSL. |
+| `usbipd: error: There is no WSL 2 distribution running` | WSL2 VM automatically shut down when idle. | Run a persistent background process in WSL2 (e.g. `wsl -d Ubuntu sleep infinity` as daemon) before attaching USB. |
+| `CMake Error: if given arguments: "EQUAL" "0" Unknown arguments` in `hal_ethos_u` | `CONFIG_ARM_ETHOS_U_LOG_LEVEL` evaluated to empty string because `STDOUT_CONSOLE` was disabled. | Set `CONFIG_ARM_ETHOS_U=n` in `prj.conf` if NPU is not used, and ensure `CONFIG_SERIAL=y` and `CONFIG_CONSOLE=y` are present. |
+| `Kconfig warning: USE_SEGGER_RTT assigned 'y' but got 'n'` | `HAS_SEGGER_RTT` dependency was unsatisfied because the board does not select it by default. | Add `config HAS_SEGGER_RTT default y` in the application's `Kconfig`. |
+| `devicetree error: undefined node label 'pwm5'` | In `e1.dtsi`, `pwm5` is a node name under `utimer5`, not a label. | Label it in `app.overlay`: `&utimer5 { pwm_red: pwm5 { status = "okay"; }; };`. |
+| Windows J-Link reports `No emulators connected via USB` after flashing | USB device `1-1` was left bound or attached to WSL2. | Run `usbipd detach --busid 1-1; usbipd unbind -b 1-1; usbipd list` to restore device state to `Not shared`. |
 
 
 

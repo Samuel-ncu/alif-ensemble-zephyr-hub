@@ -2,7 +2,9 @@
 
 This repository serves as a knowledge and execution hub for AI Coding Agents (such as Google Antigravity, Claude Code, Cursor, Windsurf, and GitHub Copilot).
 
-## Repository Architecture
+---
+
+## 📂 Repository Architecture
 
 ```text
 .
@@ -13,12 +15,14 @@ This repository serves as a knowledge and execution hub for AI Coding Agents (su
 ├── .github/
 │   └── FUNDING.yml              # Sponsor and donation configuration
 ├── docs/
-│   └── HARDWARE_GPIO_REFERENCE.md # Verified DevKit Pinout, LEDs, SW2, & DesignWare rules
+│   └── HARDWARE_GPIO_REFERENCE.md # Verified DevKit Pinout, LEDs, SW2, PadCtrl, & UTIMER PWM
 ├── examples/
-│   ├── 01_hello_world/          # Verified Example 01: UART Console Output
-│   ├── 02_blinky/               # Verified Example 02: GPIO LED1_G 1Hz Toggle
-│   ├── 03_button/               # Verified Example 03: SW2 5-Way Joystick Interrupt
-│   └── 04_hello_rtt/            # Example 04: SEGGER RTT Real-Time Logging (Zero SW4 Switch)
+│   ├── 01_hello_world/          # Verified 01: UART Console Output (115200 baud)
+│   ├── 02_blinky/               # Verified 02: GPIO LED1_G 1Hz Toggle
+│   ├── 03_button/               # Verified 03: SW2 5-Way Joystick Hardware Interrupts
+│   ├── 04_hello_rtt/            # Verified 04: SEGGER RTT Real-Time Logging (Zero SW4 Switch)
+│   ├── 05_se_services/          # Verified 05: Secure Enclave (SES) Services & Hardware TRNG
+│   └── 06_timer_pwm/            # Verified 06: Hardware UTIMER 32-bit PWM & RGB Breathing
 ├── scripts/
 │   └── app-write-mram           # Automated serial unlocking flash wrapper
 ├── LICENSE                      # Apache License 2.0
@@ -26,19 +30,75 @@ This repository serves as a knowledge and execution hub for AI Coding Agents (su
 └── README.md                    # Project overview & documentation
 ```
 
-## How AI Agents Should Use This Repository
+---
 
-1. **Skill Discovery & Hardware Truth**:
-   - Inspect `.agents/skills/<skill-name>/SKILL.md` before executing build/flash commands.
-   - For all GPIO, LED, switch, and peripheral mappings, strictly consult [`docs/HARDWARE_GPIO_REFERENCE.md`](docs/HARDWARE_GPIO_REFERENCE.md).
-   - **Crucial Driver Rule**: DesignWare GPIO (`gpio_dw.c`) forbids `GPIO_PULL_UP`/`GPIO_PULL_DOWN` software flags. Use `GPIO_INPUT` only.
+## ⚡ 7 Golden Rules for Automated Alif Hardware Operations
 
-2. **Skill Activation**:
-   - Always read the relevant `SKILL.md` before attempting multi-step build, flash, or hardware tasks.
-   - Follow the prescribed hardware switch states, wrapper patches, and port assignments strictly.
+When an AI Agent is tasked with creating, building, flashing, or debugging applications on Alif Ensemble processors, the following rules MUST be followed strictly:
 
-3. **Adding New Skills**:
-   - When creating a new skill, create a dedicated folder under `.agents/skills/<skill-name>/`.
-   - Include a valid `SKILL.md` with standard YAML frontmatter (`name`, `description`).
-   - Structure procedures logically: Hardware requirements, Environment setup, Toolchain, Build, Flash, Verify, and Troubleshooting Checklist.
+### 1. Target Core Selection (M55-HP vs M55-HE)
+* **The CoreSight AP Quirk**: On Alif Ensemble E8 silicon, J-Link V7.80c AP[4] has no ROM table (`Could not find core in Coresight setup`), causing J-Link to fail when connecting to `_HE`.
+* **The Rule**: Always compile real-time logging and debug targets for **`alif_e8_dk/ae822fa0e5597xx0/rtss_hp`** and connect J-Link to **`AE722F80F55D5_HP`** (CoreSight `AP[0]`).
 
+### 2. SEGGER RTT Control Block (`_SEGGER_RTT`) Address Calculation
+* J-Link RTT Viewer requires the exact memory address of `_SEGGER_RTT` in DTCM RAM:
+  * **Default Buffer Size (1024 UP, 16 DOWN)**: Address is **`0x20000410`**.
+  * **Custom Buffer Size (e.g. 2048 UP, 64 DOWN)**: Address shifts to **`0x20000840`**.
+* **Verification Command**:
+  ```bash
+  nm build/zephyr/zephyr.elf | grep _SEGGER_RTT
+  ```
+* **Failure Symptom**: If RTT Viewer connects to the wrong address, terminal receives 0 bytes, and typing keys results in:
+  `WARNING: Sent 0 of 1 byte.`
+* **Settings File**: J-Link RTT Viewer saves its address in `C:\Users\<user>\AppData\Roaming\SEGGER\JLinkRTTViewerSettings.ini` under `[JLink] RTTAddr`.
+
+### 3. Automated USBIPD & Windows J-Link Driver Lifecycle
+* **Exclusive Lock Rule**: Windows J-Link RTT Viewer holds an exclusive lock on the J-Link USB device. Before attaching USB to WSL2 for flashing, you MUST terminate or disconnect RTT Viewer:
+  ```powershell
+  Stop-Process -Name JLinkRTTViewer -Force -ErrorAction SilentlyContinue
+  ```
+* **WSL2 Persistence**: Ensure WSL2 distribution remains active while attaching USB (use a background keep-alive or `IsDaemon: true`).
+* **Attachment Sequence**:
+  ```powershell
+  usbipd bind --busid 1-1 --force
+  usbipd attach --wsl --busid 1-1
+  ```
+* **Mandatory Unbind Sequence**: Immediately after `west flash` finishes, release USB back to Windows native control:
+  ```powershell
+  usbipd detach --busid 1-1
+  usbipd unbind -b 1-1
+  ```
+  *(If not unbound, Windows J-Link will display: "No emulators connected via USB")*.
+
+### 4. Synopsys DesignWare GPIO (`gpio_dw.c`) & Internal Pull-Up Rule
+* **Driver Constraint**: `gpio_dw.c` rejects `GPIO_PULL_UP` and `GPIO_PULL_DOWN` with `-ENOTSUP` (-134).
+* **Hardware Solution**: Configure internal pull-ups directly in the SoC Pad Control block:
+  ```c
+  volatile uint32_t *pad_ctrl = (volatile uint32_t *)0x42007000;
+  for (int i = 0; i < 5; i++) {
+      pad_ctrl[i] = 0x2B; /* READ_ENABLE | SCHMITT | PULL_UP | 4MA */
+  }
+  ```
+* Always configure Zephyr pins with `GPIO_INPUT` only.
+
+### 5. Hardware Universal Timer (UTIMER) PWM Pin Mapping
+* On the E8 DevKit, `LEDRGB1` pins map directly to 32-bit hardware Universal Timers:
+  * **`LED1_R` (P6_2)** ➔ **`UT5_T0_B`** (UTIMER5 Channel 0)
+  * **`LED1_G` (P6_4)** ➔ **`UT6_T0_B`** (UTIMER6 Channel 0)
+  * **`LED1_B` (P6_6)** ➔ **`UT7_T0_B`** (UTIMER7 Channel 0)
+* **Devicetree Overlay Pattern**: Label the timer's child PWM nodes and disable `&aled0` in `gpio-leds`:
+  ```dts
+  &aled0 { status = "disabled"; };
+  &utimer5 { status = "okay"; pwm_red: pwm5 { status = "okay"; }; };
+  &utimer6 { status = "okay"; pwm_green: pwm6 { status = "okay"; }; };
+  &utimer7 { status = "okay"; pwm_blue: pwm7 { status = "okay"; }; };
+  ```
+
+### 6. Zephyr Kconfig Rules for Alif Applications
+* **SEGGER RTT Declaration**: Must include `config HAS_SEGGER_RTT default y` in the application's `Kconfig` to unlock RTT driver modules.
+* **Console Dependencies**: Always enable `CONFIG_SERIAL=y` and `CONFIG_CONSOLE=y` when using `CONFIG_USE_SEGGER_RTT=y` and `CONFIG_RTT_CONSOLE=y`.
+* **Ethos-U Guard**: If Ethos-U NPU is not used, set `CONFIG_ARM_ETHOS_U=n` in `prj.conf` to prevent CMake build errors regarding undefined log levels.
+
+### 7. Physical Switch `SW4` State Machine
+* **`SE` (Top Position)**: Mandatory for flashing (`west flash`). Bootloader ISP ROM on UART4.
+* **`UART2` (Center Position)**: Application run mode, UART console, and J-Link RTT monitoring.
