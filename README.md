@@ -27,7 +27,8 @@ This repository provides production-ready, deterministic **AI Agent Skills (`SKI
 | **[`06_timer_pwm`](examples/06_timer_pwm)** | *(Hardware PWM)* | Hardware Universal Timer (UTIMER) & RGB LED smooth PWM color breathing. | M55-HP / M55-HE | ✅ Verified |
 | **[`07_dual_core_ipc`](examples/07_dual_core_ipc)** | *(CMSIS-RTOS)* | Asymmetric Multiprocessing (AMP) with M55-HE & M55-HP full-duplex Mailbox/IPM communication & latency benchmark. | Dual M55 (HP+HE) | ✅ Verified |
 | **[`08_sensor_imu`](examples/08_sensor_imu)** | *(I3C / IMU)* | Bosch BMI323 6-axis IMU over I3C, Cortex-M55 FPU 3D attitude estimation & SEGGER RTT horizon telemetry. | M55-HP | ✅ Verified |
-| **[`09_ethosu_npu_ai`](examples/09_ethosu_npu_ai)** | *(Edge AI / NPU)* | Arm Ethos-U55 NPU (256 MACs) hardware AI acceleration, TFLM KWS CNN inference & RTT latency benchmark. | M55-HP | 🚀 Ready to Flash |
+| **[`09_ethosu_npu_ai`](examples/09_ethosu_npu_ai)** | *(Edge AI / NPU)* | Arm Ethos-U55 NPU (256 MACs) hardware AI acceleration, TFLM KWS CNN inference & RTT latency benchmark. | M55-HP | ✅ Verified |
+
 
 ---
 
