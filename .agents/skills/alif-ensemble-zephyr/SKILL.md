@@ -361,7 +361,7 @@ west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp /mnt/c/Users/test/.g
 | `CMake Error: if given arguments: "EQUAL" "0" Unknown arguments` in `hal_ethos_u` | `CONFIG_ARM_ETHOS_U_LOG_LEVEL` evaluated to empty string because `STDOUT_CONSOLE` was disabled. | Set `CONFIG_ARM_ETHOS_U=n` in `prj.conf` if NPU is not used, and ensure `CONFIG_SERIAL=y` and `CONFIG_CONSOLE=y` are present. |
 | `Kconfig warning: USE_SEGGER_RTT assigned 'y' but got 'n'` | `HAS_SEGGER_RTT` dependency was unsatisfied because the board does not select it by default. | Add `config HAS_SEGGER_RTT default y` in the application's `Kconfig`. |
 | `devicetree error: undefined node label 'pwm5'` | In `e1.dtsi`, `pwm5` is a node name under `utimer5`, not a label. | Label it in `app.overlay`: `&utimer5 { pwm_red: pwm5 { status = "okay"; }; };`. |
-| Windows J-Link reports `No emulators connected via USB` after flashing | USB device `1-1` was left bound or attached to WSL2. | Run `usbipd detach --busid 1-1; usbipd unbind -b 1-1; usbipd list` to restore device state to `Not shared`. |
+| Windows J-Link reports `No emulators connected via USB` after flashing | USB device `1-1` was left bound or stuck in `USBIP Shared Device` state due to `unbind` executing before Windows PnP finished re-enumerating. | Run `usbipd detach --busid 1-1; Start-Sleep -Seconds 1; usbipd unbind -b 1-1`. If `usbipd list` still shows `USBIP Shared Device`, run `pnputil /restart-device "USB\VID_1366&PID_1024*"` or re-run `usbipd unbind -b 1-1` until state shows `JLink CDC UART Port ..., Not shared`. |
 
 
 

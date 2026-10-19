@@ -63,12 +63,13 @@ When an AI Agent is tasked with creating, building, flashing, or debugging appli
   usbipd bind --busid 1-1 --force
   usbipd attach --wsl --busid 1-1
   ```
-* **Mandatory Unbind Sequence**: Immediately after `west flash` finishes, release USB back to Windows native control:
+* **Mandatory Unbind Sequence**: Immediately after `west flash` finishes, release USB back to Windows native control with a 1-second delay for Windows PnP re-enumeration:
   ```powershell
   usbipd detach --busid 1-1
+  Start-Sleep -Seconds 1
   usbipd unbind -b 1-1
   ```
-  *(If not unbound, Windows J-Link will display: "No emulators connected via USB")*.
+  *(If `unbind` is called too quickly without sleep, Windows throws `ERROR_NO_SUCH_DEVINST` and leaves the driver stuck as `USBIP Shared Device`, causing J-Link to report: "No emulators connected via USB". If this occurs, run `pnputil /restart-device "USB\VID_1366&PID_1024*"` or `usbipd unbind -b 1-1`)*.
 
 ### 4. Synopsys DesignWare GPIO (`gpio_dw.c`) & Internal Pull-Up Rule
 * **Driver Constraint**: `gpio_dw.c` rejects `GPIO_PULL_UP` and `GPIO_PULL_DOWN` with `-ENOTSUP` (-134).
