@@ -259,6 +259,13 @@ cd ~/alif/sdk-alif/zephyr
 west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp /mnt/c/Users/test/.gemini/antigravity/scratch/alif_vscode-template/examples/06_timer_pwm
 ```
 
+#### Option G: Example 8 - Bosch BMI323 6-Axis IMU over I3C & Real-Time Attitude Telemetry
+*Note: High-speed I3C Master communication with onboard Bosch BMI323 (dynamic address 0x0A), Cortex-M55 FPU 3D attitude estimation, RGB LED tilt indicators, and SEGGER RTT horizon meter.*
+```bash
+cd ~/alif/sdk-alif/zephyr
+west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp /mnt/c/Users/test/.gemini/antigravity/scratch/alif_vscode-template/examples/08_sensor_imu
+```
+
 ### 5.2 Flash to MRAM
 1. Verify `SW4` switch is in the **`SE` (Top)** position.
 2. Ensure no serial terminals are open (`pkill picocom`). *(The enhanced `app-write-mram` wrapper will also auto-release any lingering locks).*
@@ -334,6 +341,22 @@ west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp /mnt/c/Users/test/.g
        - `'b'` : 100-packet Burst Benchmark (measures min/avg/max latency & throughput >250k trans/sec).
        - `'s'` : Query remote worker metrics.
        - `'a'` : Pause/Resume periodic auto-heartbeat.
+
+8. **Verify Example 08 (Bosch BMI323 6-Axis IMU over I3C)**:
+   - Slide `SW4` to **`UART2` (Center)** and press **`RESET`**.
+   - Observe onboard `LEDRGB1`:
+     - Green LED indicates board is level ($|\text{Pitch}| < 6^\circ, |\text{Roll}| < 6^\circ$).
+     - Red LED indicates forward/backward pitch tilt.
+     - Blue LED indicates left/right roll tilt.
+     - White flash indicates active motion / angular rotation ($>40^\circ/\text{s}$).
+   - Open J-Link RTT Viewer with Address **`0x20000410`** (`JTAG`, `4000 kHz`):
+     - View live ASCII artificial horizon and real-time attitude stream:
+       `[#0042] Pitch [-------=======|---------------]  +8.3°  | Acc: [+0.14, +0.02, +0.98]g`
+     - Test interactive commands in Input bar:
+       - `'c'` : Tare/Calibrate current physical position as 0.0° level.
+       - `'r'` : Reset calibration offsets to factory default.
+       - `'m'` : Toggle between compact telemetry stream and visual ASCII horizon bars.
+       - `'h'` : Print help menu.
 
 ---
 

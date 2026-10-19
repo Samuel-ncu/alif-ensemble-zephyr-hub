@@ -1,0 +1,45 @@
+/*
+ * Copyright (c) 2026 Samuel (Shu-Ming) Liu
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Devicetree overlay for Bosch BMI323 6-Axis IMU on Alif Ensemble E8 DevKit
+ */
+
+#include <zephyr/dt-bindings/pinctrl/ensemble-pinctrl.h>
+
+&i3c0 {
+	status = "okay";
+
+	bmi323: bmi323@69000003b810431000 {
+		compatible = "bosch,bmi323";
+		reg = <0x69 0x03b8 0x10431000>;
+		/* Dynamic Address To Be Assigned To The Device */
+		assigned-address = <0xA>;
+		int-gpios = <&gpio8 4 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
+};
+
+&pinctrl_gpio8 {
+	group0 {
+		/* Enable Port-8 Pin-4 for BMI323 INT */
+		pinmux = <PIN_P8_4__GPIO>;
+	};
+};
+
+&gpio8 {
+	pinctrl-0 = <&pinctrl_gpio8>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+/* I3C bus recovery (scl-gpios / sda-gpios on gpio7) */
+&gpio7 {
+	status = "okay";
+};
+
+/* Enable Port 6 for onboard RGB LED (LED1_R: P6_2, LED1_G: P6_4, LED1_B: P6_6) */
+&gpio6 {
+	status = "okay";
+};
+

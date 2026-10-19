@@ -23,7 +23,8 @@ This repository serves as a knowledge and execution hub for AI Coding Agents (su
 │   ├── 04_hello_rtt/            # Verified 04: SEGGER RTT Real-Time Logging (Zero SW4 Switch)
 │   ├── 05_se_services/          # Verified 05: Secure Enclave (SES) Services & Hardware TRNG
 │   ├── 06_timer_pwm/            # Verified 06: Hardware UTIMER 32-bit PWM & RGB Breathing
-│   └── 07_dual_core_ipc/        # Verified 07: Dual-core AMP IPC over ARM MHUv2 (HP Master + HE Worker)
+│   ├── 07_dual_core_ipc/        # Verified 07: Dual-core AMP IPC over ARM MHUv2 (HP Master + HE Worker)
+│   └── 08_sensor_imu/           # Verified 08: Bosch BMI323 6-Axis IMU over I3C & 3D Attitude Telemetry
 ├── scripts/
 │   └── app-write-mram           # Automated serial unlocking flash wrapper
 ├── LICENSE                      # Apache License 2.0
@@ -124,4 +125,15 @@ When an AI Agent is tasked with creating, building, flashing, or debugging appli
 * Hardware Mailbox addresses:
   * **Sender Register** (`rtsshe_rtsshp_mhu0_s`): `0x40090000` (IRQ 42 TX completion).
   * **Receiver Register** (`rtsshp_rtsshe_mhu0_r`): `0x40080000` (IRQ 41 RX interrupt).
+
+### 10. Bosch BMI323 6-Axis IMU & Synopsys DesignWare I3C Bus
+* **Devicetree Binding**: The onboard Bosch BMI323 connects to `i3c0` at `0x49034000`:
+  * Static I2C address: `0x69`, PID: `0x03b8 0x10431000`.
+  * Dynamic I3C assigned address: **`0xA`**.
+  * Hardware interrupt: `int-gpios = <&gpio8 4 GPIO_ACTIVE_HIGH>;`.
+  * Mandatory: `&gpio7 { status = "okay"; };` must be enabled in DTS for I3C bus recovery.
+* **Driver Symbols**:
+  * `CONFIG_I3C=y`, `CONFIG_I3C_INIT_RSTACT=y`, `CONFIG_I3C_USE_IBI=n`.
+  * `CONFIG_SENSOR=y`, `CONFIG_BMI323=y` (automatically selects `CONFIG_BMI323_BUS_I3C=y`).
+
 

@@ -182,4 +182,49 @@ cp -f core_he/build/zephyr/zephyr.bin core_he/build/zephyr/zephyr_he.bin
 west flash -d core_hp/build -- --he-bin core_he/build/zephyr/zephyr_he.bin --he-mram-boot 1
 ```
 
+---
+
+## 10. Bosch BMI323 6-Axis IMU & I3C Bus Mapping
+
+On the Alif E8 DevKit (Rev A0), motion sensing is provided by an onboard **Bosch BMI323** 6-axis IMU interfaced over the **Synopsys DesignWare I3C Bus**:
+
+| Function | SoC Pin / Pad | Devicetree Node | Configuration & Notes |
+| :--- | :--- | :--- | :--- |
+| **I3C Clock (`SCL`)** | `P7_0` | `&i3c0` | Synopsys DW-I3C bus master clock |
+| **I3C Data (`SDA`)** | `P7_1` | `&i3c0` | Synopsys DW-I3C bus master data |
+| **IMU Interrupt (`INT1`)** | `P8_4` | `&gpio8` pin 4 | Data Ready / Motion interrupt (`GPIO_ACTIVE_HIGH`) |
+| **I3C Bus Recovery** | `GPIO7` | `&gpio7` | Bus recovery GPIO fallback (`scl-gpios`, `sda-gpios`) |
+| **Static / Dynamic Addr** | `0x69` / `0x0A` | `bmi323@...` | Static I2C address `0x69`, dynamic I3C address `0x0A` |
+
+### Devicetree Node Pattern:
+```dts
+#include <zephyr/dt-bindings/pinctrl/ensemble-pinctrl.h>
+
+&i3c0 {
+	status = "okay";
+	bmi323: bmi323@69000003b810431000 {
+		compatible = "bosch,bmi323";
+		reg = <0x69 0x03b8 0x10431000>;
+		assigned-address = <0xA>;
+		int-gpios = <&gpio8 4 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
+};
+
+&pinctrl_gpio8 {
+	group0 {
+		pinmux = <PIN_P8_4__GPIO>;
+	};
+};
+
+&gpio8 {
+	pinctrl-0 = <&pinctrl_gpio8>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&gpio7 { status = "okay"; };
+```
+
+
 

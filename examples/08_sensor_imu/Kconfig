@@ -1,0 +1,10 @@
+# Copyright (c) 2026 Samuel (Shu-Ming) Liu
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "Alif Ensemble E8 - 08 Sensor IMU (BMI323 over I3C)"
+
+config HAS_SEGGER_RTT
+	default y
+
+source "Kconfig.zephyr"
+

@@ -26,6 +26,7 @@ This repository provides production-ready, deterministic **AI Agent Skills (`SKI
 | **[`05_se_services`](examples/05_se_services)** | *(SES Security)* | Secure Enclave (SES) communication: reads OTP, LCS lifecycle, part UID & live hardware TRNG entropy over MHUv2. | M55-HP / M55-HE | ✅ Verified |
 | **[`06_timer_pwm`](examples/06_timer_pwm)** | *(Hardware PWM)* | Hardware Universal Timer (UTIMER) & RGB LED smooth PWM color breathing. | M55-HP / M55-HE | ✅ Verified |
 | **[`07_dual_core_ipc`](examples/07_dual_core_ipc)** | *(CMSIS-RTOS)* | Asymmetric Multiprocessing (AMP) with M55-HE & M55-HP full-duplex Mailbox/IPM communication & latency benchmark. | Dual M55 (HP+HE) | ✅ Verified |
+| **[`08_sensor_imu`](examples/08_sensor_imu)** | *(I3C / IMU)* | Bosch BMI323 6-axis IMU over I3C, Cortex-M55 FPU 3D attitude estimation & SEGGER RTT horizon telemetry. | M55-HP | 🚀 Ready to Flash |
 
 ---
 
@@ -37,6 +38,7 @@ This hub solves notoriously frustrating hardware quirks out-of-the-box:
 3. **Multi-Core Staging Collision Fix**: Automatically separates worker and master binaries to prevent flat-directory overwrite collisions in `alif_flash.py`.
 4. **5-Way Navigation Joystick Support**: Full hardware mapping for Alif DevKit's `SW2` joystick across all 5 directions (`LPGPIO_0` to `LPGPIO_4`) with glitch-free active-low falling-edge IRQs.
 5. **Universal Timer (UTIMER) 32-Bit PWM**: Zero CPU overhead RGB LED breathing & color cycling.
+6. **I3C High-Speed Sensor Telemetry**: Autonomous dynamic address assignment (`0x0A`) and FPU attitude calculation for Bosch BMI323.
 
 ---
 
@@ -50,7 +52,7 @@ This hub solves notoriously frustrating hardware quirks out-of-the-box:
 ├── .github/
 │   └── FUNDING.yml            # GitHub Sponsor & Ko-fi config
 ├── docs/
-│   └── HARDWARE_GPIO_REFERENCE.md # Verified DevKit Pinout, LEDs, SW2, PWM, & Dual-Core rules
+│   └── HARDWARE_GPIO_REFERENCE.md # Verified DevKit Pinout, LEDs, SW2, PWM, Dual-Core & I3C rules
 ├── examples/
 │   ├── 01_hello_world/        # Verified UART console output
 │   ├── 02_blinky/             # Verified 1Hz GPIO LED toggle
@@ -58,7 +60,8 @@ This hub solves notoriously frustrating hardware quirks out-of-the-box:
 │   ├── 04_hello_rtt/          # SEGGER RTT real-time logging (zero SW4 switch)
 │   ├── 05_se_services/        # Secure Enclave services & hardware TRNG
 │   ├── 06_timer_pwm/          # Hardware UTIMER 32-bit PWM & RGB Breathing
-│   └── 07_dual_core_ipc/      # Dual-core AMP IPC over ARM MHUv2 (HP Master + HE Worker)
+│   ├── 07_dual_core_ipc/      # Dual-core AMP IPC over ARM MHUv2 (HP Master + HE Worker)
+│   └── 08_sensor_imu/         # Bosch BMI323 6-axis IMU over I3C & 3D Attitude Telemetry
 ├── scripts/
 │   └── app-write-mram         # Automated port-unlocking & package sync wrapper
 ├── AGENTS.md                  # System prompt & instruction entry point for LLMs
