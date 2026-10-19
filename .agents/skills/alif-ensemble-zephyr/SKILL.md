@@ -252,6 +252,13 @@ cd ~/alif/sdk-alif/zephyr
 west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp examples/05_se_services
 ```
 
+#### Option F: Example 6 - Hardware Universal Timer (UTIMER) PWM & RGB Breathing
+*Note: 32-bit hardware PWM driving onboard RGB LEDs (P6_2, P6_4, P6_6) via UTIMER 5, 6, 7 with gamma correction and RTT telemetry.*
+```bash
+cd ~/alif/sdk-alif/zephyr
+west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp /mnt/c/Users/test/.gemini/antigravity/scratch/alif_vscode-template/examples/06_timer_pwm
+```
+
 ### 5.2 Flash to MRAM
 1. Verify `SW4` switch is in the **`SE` (Top)** position.
 2. Ensure no serial terminals are open (`pkill picocom`). *(The enhanced `app-write-mram` wrapper will also auto-release any lingering locks).*

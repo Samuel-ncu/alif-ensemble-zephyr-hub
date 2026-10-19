@@ -115,3 +115,18 @@ west flash
 ```
 *(The repository's automated `scripts/app-write-mram` wrapper will automatically terminate any conflicting terminal sessions and verify 100% burn).*
 
+---
+
+## 6. Universal Timer (UTIMER) Hardware PWM Pin Mapping
+
+On the Alif Ensemble E8 DevKit, the onboard RGB LEDs (`LEDRGB1`) feature direct hardware multiplexing to the 32-bit Universal Timer (UTIMER) subsystem (`compatible = "alif,pwm"`):
+
+| Silk Screen | LED Color | Pin Number | Devicetree Node | Alternate Pinmux | Timer Subsystem | PWM Output Channel |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`LED1_R`** | Red LED | `P6_2` | `&pwm_red` (`pwm5`) | `PIN_P6_2__UT5_T0_B` | **UTIMER 5** | Channel 0 (T0) |
+| **`LED1_G`** | Green LED | `P6_4` | `&pwm_green` (`pwm6`) | `PIN_P6_4__UT6_T0_B` | **UTIMER 6** | Channel 0 (T0) |
+| **`LED1_B`** | Blue LED | `P6_6` | `&pwm_blue` (`pwm7`) | `PIN_P6_6__UT7_T0_B` | **UTIMER 7** | Channel 0 (T0) |
+
+> [!TIP]
+> **Autonomous PWM Operation**: When using UTIMER hardware PWM, the waveform is generated autonomously by the 32-bit counter with 0% CPU overhead, avoiding any software timing jitter or interrupt latency.
+

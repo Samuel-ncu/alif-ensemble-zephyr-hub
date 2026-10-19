@@ -1,0 +1,74 @@
+/*
+ * Copyright (c) 2026 Samuel (Shu-Ming) Liu
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Devicetree overlay for Example 06: Hardware UTIMER PWM & RGB LED Breathing
+ * Alif Ensemble E8 Development Kit (AE822FA0E5597LS0)
+ *
+ * Hardware Mapping:
+ * - Red LED   (LED1_R, P6_2) -> UTIMER5 Channel 0 (T0) via pwm5
+ * - Green LED (LED1_G, P6_4) -> UTIMER6 Channel 0 (T0) via pwm6
+ * - Blue LED  (LED1_B, P6_6) -> UTIMER7 Channel 0 (T0) via pwm7
+ */
+
+#include <zephyr/dt-bindings/pwm/pwm.h>
+
+/ {
+	aliases {
+		pwm-led-red   = &pwm_led_red;
+		pwm-led-green = &pwm_led_green;
+		pwm-led-blue  = &pwm_led_blue;
+	};
+
+	pwmleds {
+		compatible = "pwm-leds";
+
+		pwm_led_red: pwm_led_0 {
+			pwms = <&pwm_red 0 PWM_MSEC(20) PWM_POLARITY_NORMAL>;
+			label = "PWM_LED_RED";
+		};
+
+		pwm_led_green: pwm_led_1 {
+			pwms = <&pwm_green 0 PWM_MSEC(20) PWM_POLARITY_NORMAL>;
+			label = "PWM_LED_GREEN";
+		};
+
+		pwm_led_blue: pwm_led_2 {
+			pwms = <&pwm_blue 0 PWM_MSEC(20) PWM_POLARITY_NORMAL>;
+			label = "PWM_LED_BLUE";
+		};
+	};
+};
+
+/* Disable GPIO mapping on LED1_R to grant exclusive control to UTIMER5 */
+&aled0 {
+	status = "disabled";
+};
+
+/* Enable Universal Timer 5 and label its child node pwm5 */
+&utimer5 {
+	status = "okay";
+
+	pwm_red: pwm5 {
+		status = "okay";
+	};
+};
+
+/* Enable Universal Timer 6 and label its child node pwm6 */
+&utimer6 {
+	status = "okay";
+
+	pwm_green: pwm6 {
+		status = "okay";
+	};
+};
+
+/* Enable Universal Timer 7 and label its child node pwm7 */
+&utimer7 {
+	status = "okay";
+
+	pwm_blue: pwm7 {
+		status = "okay";
+	};
+};
+

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "Example 06: Alif Ensemble E8 - Universal Timer PWM & RGB Color Breathing"
+
+config HAS_SEGGER_RTT
+	default y
+
+source "Kconfig.zephyr"
+
