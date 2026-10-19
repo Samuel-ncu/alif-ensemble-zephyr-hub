@@ -321,12 +321,28 @@ west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp /mnt/c/Users/test/.g
    - Observe live PWM duty telemetry (`R: %`, `G: %`, `B: %`).
    - Test interactive commands: `'m'` (Cycle animation mode), `'+'` / `'-'` (Speed), `' '` (Pause), `'r'`, `'g'`, `'b'`, `'c'`, `'y'`, `'w'`, `'o'` (Direct color override).
 
+7. **Verify Example 07 (Dual-Core AMP IPC over ARM MHUv2)**:
+   - Slide `SW4` to **`UART2` (Center)** and press **`RESET`**.
+   - Observe onboard `LEDRGB1`:
+     - Blue LED flashes when HP Master sends Ping packets.
+     - Green LED pulses when HE Worker receives and replies with Pong.
+   - Open J-Link RTT Viewer with Address **`0x20000410`**:
+     - Live 3-second heartbeat telemetry: `[Heartbeat #001] Pong OK | RTT Latency: 3 us | Remote RX Count: 1`.
+     - Test interactive commands in Input bar:
+       - `'p'` : Single Ping with round-trip latency ($\mu$s).
+       - `'l'` : Remote toggle M55-HE Green LED (`P6_4`).
+       - `'b'` : 100-packet Burst Benchmark (measures min/avg/max latency & throughput >250k trans/sec).
+       - `'s'` : Query remote worker metrics.
+       - `'a'` : Pause/Resume periodic auto-heartbeat.
+
 ---
 
 ## 6. Troubleshooting Checklist
 
 | Symptom | Root Cause | Solution |
 | :--- | :--- | :--- |
+| `HP_APP and HE_APP images have the same destination name zephyr.bin` | `alif_flash.py` copies all images into flat `toolkit/build/images/` directory; both builds default to `zephyr.bin`. | Copy or rename the worker binary to a unique name (e.g. `zephyr_he.bin`) before passing to `west flash --he-bin ...`. |
+| `warning: attempt to assign the value 'y' to undefined symbol IPM_MHUV2` | In Zephyr RTOS on Alif, the MHUv2 driver symbol is `CONFIG_ARM_MHUV2=y`. | Enable `CONFIG_IPM=y` and `CONFIG_ARM_MHUV2=y` in `prj.conf` (not `IPM_MHUV2`). |
 | `gpio_pin_configure()` returns `-ENOTSUP` (-134), or button IRQ fails with `-EINVAL` (-22) | `GPIO_PULL_UP` or `GPIO_PULL_DOWN` was requested on Synopsys DesignWare `LPGPIO`. | Pass `GPIO_INPUT` only without pull flags. Pull-ups are hardware-managed via `pinctrl_lpgpio` or SoC Pad Control at `0x42007000` (`0x2B`). See [HARDWARE_GPIO_REFERENCE.md](references/HARDWARE_GPIO_REFERENCE.md). |
 | `[ERROR] /dev/ttyACM0 readSerial reporting disconnected` | **Multiple Access Conflict**: `picocom`, `minicom`, or another terminal emulator is running in background holding `/dev/ttyACM0`. Linux PySerial `select()` sees data but `read()` returns 0 bytes (stolen by picocom), throwing `SerialException` which the toolkit logs as "disconnected". | **1.** Use the enhanced `app-write-mram` wrapper (auto-runs `fuser -k -9 /dev/ttyACM0`).<br>**2.** Or manually execute `sudo fuser -k -9 /dev/ttyACM0` or `pkill -9 picocom`.<br>**3.** If USB dropped, ensure `usbipd attach --wsl Ubuntu --busid <BUSID> -a` is active. |
 | `[ERROR] Target did not respond` | `SW4` switch is not in the **`SE` (Top)** position, or board is hung executing user code. | 1. Slide `SW4` to **`SE` (Top)**.<br>2. Press the hardware **`RESET`** button once to force SE ROM ISP mode.<br>3. Retry `west flash`. |

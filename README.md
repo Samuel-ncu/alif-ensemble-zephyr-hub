@@ -25,7 +25,7 @@ This repository provides production-ready, deterministic **AI Agent Skills (`SKI
 | **[`04_hello_rtt`](examples/04_hello_rtt)** | `hello_rtt` | SEGGER RTT real-time logging without toggling physical `SW4` UART switches. | M55-HP / M55-HE | ✅ Verified |
 | **[`05_se_services`](examples/05_se_services)** | *(SES Security)* | Secure Enclave (SES) communication: reads OTP, LCS lifecycle, part UID & live hardware TRNG entropy over MHUv2. | M55-HP / M55-HE | ✅ Verified |
 | **[`06_timer_pwm`](examples/06_timer_pwm)** | *(Hardware PWM)* | Hardware Universal Timer (UTIMER) & RGB LED smooth PWM color breathing. | M55-HP / M55-HE | ✅ Verified |
-| **`07_dual_core_ipc`** | *(CMSIS-RTOS)* | Asymmetric Multiprocessing (AMP) with M55-HE & M55-HP full-duplex Mailbox/IPM communication. | Dual M55 | 📋 Planned |
+| **[`07_dual_core_ipc`](examples/07_dual_core_ipc)** | *(CMSIS-RTOS)* | Asymmetric Multiprocessing (AMP) with M55-HE & M55-HP full-duplex Mailbox/IPM communication & latency benchmark. | Dual M55 (HP+HE) | 🚀 Ready to Flash |
 
 ---
 
@@ -34,7 +34,9 @@ This repository provides production-ready, deterministic **AI Agent Skills (`SKI
 This hub solves notoriously frustrating hardware quirks out-of-the-box:
 1. **Automated Serial Conflict Resolver**: Automatically detects and terminates lingering background terminal sessions (`picocom`, `minicom`, or stale python instances) that cause the cryptic `[ERROR] /dev/ttyACM0 readSerial reporting disconnected` failure during `west flash`.
 2. **Dual-Image MRAM Flash Fix**: Seamlessly links build artifacts and synchronizes `application_package.ds` so both `zephyr.bin` (at `0x80000000`) and `AppTocPackage.bin` (TOC) are burned in a single step without silent omission.
-3. **5-Way Navigation Joystick Support**: Full hardware mapping for Alif DevKit's `SW2` joystick across all 5 directions (`LPGPIO_0` to `LPGPIO_4`) with glitch-free active-low falling-edge IRQs.
+3. **Multi-Core Staging Collision Fix**: Automatically separates worker and master binaries to prevent flat-directory overwrite collisions in `alif_flash.py`.
+4. **5-Way Navigation Joystick Support**: Full hardware mapping for Alif DevKit's `SW2` joystick across all 5 directions (`LPGPIO_0` to `LPGPIO_4`) with glitch-free active-low falling-edge IRQs.
+5. **Universal Timer (UTIMER) 32-Bit PWM**: Zero CPU overhead RGB LED breathing & color cycling.
 
 ---
 
@@ -48,12 +50,15 @@ This hub solves notoriously frustrating hardware quirks out-of-the-box:
 ├── .github/
 │   └── FUNDING.yml            # GitHub Sponsor & Ko-fi config
 ├── docs/
-│   └── HARDWARE_GPIO_REFERENCE.md # Verified DevKit Pinout, LEDs, SW2, & DesignWare rules
+│   └── HARDWARE_GPIO_REFERENCE.md # Verified DevKit Pinout, LEDs, SW2, PWM, & Dual-Core rules
 ├── examples/
 │   ├── 01_hello_world/        # Verified UART console output
 │   ├── 02_blinky/             # Verified 1Hz GPIO LED toggle
 │   ├── 03_button/             # Verified SW2 5-way joystick interrupt & LED control
-│   └── 04_hello_rtt/          # SEGGER RTT real-time logging (zero SW4 switch)
+│   ├── 04_hello_rtt/          # SEGGER RTT real-time logging (zero SW4 switch)
+│   ├── 05_se_services/        # Secure Enclave services & hardware TRNG
+│   ├── 06_timer_pwm/          # Hardware UTIMER 32-bit PWM & RGB Breathing
+│   └── 07_dual_core_ipc/      # Dual-core AMP IPC over ARM MHUv2 (HP Master + HE Worker)
 ├── scripts/
 │   └── app-write-mram         # Automated port-unlocking & package sync wrapper
 ├── AGENTS.md                  # System prompt & instruction entry point for LLMs

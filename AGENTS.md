@@ -102,3 +102,22 @@ When an AI Agent is tasked with creating, building, flashing, or debugging appli
 ### 7. Physical Switch `SW4` State Machine
 * **`SE` (Top Position)**: Mandatory for flashing (`west flash`). Bootloader ISP ROM on UART4.
 * **`UART2` (Center Position)**: Application run mode, UART console, and J-Link RTT monitoring.
+
+### 8. Multi-Core Flashing Flat-Directory Collision Rule
+* **The Root Cause**: `alif_flash.py` copies all binaries (`zephyr.bin`, `--he-bin`, `--a32-bin`) into a single flat directory `toolkit/build/images/`.
+* **The Constraint**: If both master and worker builds produce the default name `zephyr.bin`, `_validate_unique_image_names()` rejects the command:
+  `HP_APP and HE_APP images have the same destination name zephyr.bin`
+* **The Rule**: Always copy/rename the worker binary to a unique filename before passing to `west flash`:
+  ```bash
+  cp -f build_he/zephyr/zephyr.bin build_he/zephyr/zephyr_he.bin
+  west flash -d build_hp -- --he-bin build_he/zephyr/zephyr_he.bin --he-mram-boot 1
+  ```
+
+### 9. ARM MHUv2 Driver Kconfig Symbol (`CONFIG_ARM_MHUV2`)
+* In Zephyr RTOS on Alif Ensemble, the ARM Message Handling Unit driver symbol is:
+  * `CONFIG_IPM=y`
+  * `CONFIG_ARM_MHUV2=y` *(Do NOT use `CONFIG_IPM_MHUV2=y`, which is an undefined symbol)*.
+* Hardware Mailbox addresses:
+  * **Sender Register** (`rtsshe_rtsshp_mhu0_s`): `0x40090000` (IRQ 42 TX completion).
+  * **Receiver Register** (`rtsshp_rtsshe_mhu0_r`): `0x40080000` (IRQ 41 RX interrupt).
+

@@ -1,0 +1,20 @@
+/*
+ * DeviceTree overlay for Dual-Core IPC Master (Cortex-M55 HP)
+ */
+
+/ {
+	aliases {
+		rtssmhu0r = &rtsshp_rtsshe_mhu0_r;
+		rtssmhu0s = &rtsshe_rtsshp_mhu0_s;
+		led0 = &aled0;
+		led-blue = &aled_blue;
+	};
+
+	leds {
+		aled_blue: led_blue {
+			gpios = <&gpio6 6 0>;
+			label = "LED1_B";
+		};
+	};
+};
+

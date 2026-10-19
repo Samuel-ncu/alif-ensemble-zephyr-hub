@@ -1,0 +1,7 @@
+mainmenu "Alif Ensemble Dual-Core IPC Master (M55-HP)"
+
+config HAS_SEGGER_RTT
+	default y
+
+source "Kconfig.zephyr"
+

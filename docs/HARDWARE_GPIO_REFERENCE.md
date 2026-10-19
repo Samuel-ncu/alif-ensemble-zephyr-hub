@@ -164,4 +164,22 @@ The Alif Ensemble SoC provides dedicated ARM Message Handling Unit v2 (MHUv2) co
 > nm build/zephyr/zephyr.elf | grep _SEGGER_RTT
 > ```
 
+---
+
+## 9. Dual-Core Packaging & Multi-Binary Flashing
+
+When running both **Cortex-M55 HP** and **Cortex-M55 HE** concurrently, the Alif Security Enclave (SES) bootloader extracts and executes both images from MRAM simultaneously using the Application Table of Contents (AToC):
+
+| CPU Node | Flash Address | Boot Flag | Build Directory / Source | Default Staging Binary |
+| :--- | :--- | :--- | :--- | :--- |
+| **`HP_APP`** | `0x80200000` | `["boot"]` | `core_hp/build/zephyr/` | `zephyr.bin` |
+| **`HE_APP`** | `0x80000000` | `["boot"]` | `core_he/build/zephyr/` | `zephyr_he.bin` *(Renamed)* |
+
+### Critical Multi-Core Flashing Rule:
+The Alif Security Toolkit (`alif_flash.py`) stages binaries in a single flat directory (`build/images/`). To prevent name collision errors (`HP_APP and HE_APP images have the same destination name zephyr.bin`), always copy or rename the worker binary to a unique name before invoking `west flash`:
+```bash
+cp -f core_he/build/zephyr/zephyr.bin core_he/build/zephyr/zephyr_he.bin
+west flash -d core_hp/build -- --he-bin core_he/build/zephyr/zephyr_he.bin --he-mram-boot 1
+```
+
 

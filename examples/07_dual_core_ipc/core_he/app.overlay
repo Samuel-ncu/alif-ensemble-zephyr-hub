@@ -1,0 +1,12 @@
+/*
+ * DeviceTree overlay for Dual-Core IPC Worker (Cortex-M55 HE)
+ */
+
+/ {
+	aliases {
+		rtssmhu0r = &rtsshp_rtsshe_mhu0_r;
+		rtssmhu0s = &rtsshe_rtsshp_mhu0_s;
+		led0 = &aled0;
+	};
+};
+
