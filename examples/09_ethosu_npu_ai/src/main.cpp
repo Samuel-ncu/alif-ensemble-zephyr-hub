@@ -122,29 +122,26 @@ static bool execute_inference(bool print_details, uint32_t *out_cycles, uint32_t
 	float scale = output_tensor->params.scale;
 	int32_t zero_point = output_tensor->params.zero_point;
 
-	/* Calculate dequantized values and Softmax */
-	float dequant[12];
-	float max_val = -1e9f;
+	/* 
+	 * The KWS CNN model's output layer is already Softmax quantized in INT8:
+	 * scale = 1/256 (~0.00390625), zero_point = -128
+	 * Probability is directly: prob = (quant_val - zero_point) * scale * 100%
+	 */
+	float probs[12];
+	float max_prob = -1.0f;
 	int top_class = 0;
 
 	for (int i = 0; i < 12; i++) {
 		int8_t quant_val = output_tensor->data.int8[i];
-		dequant[i] = ((float)quant_val - (float)zero_point) * scale;
-		if (dequant[i] > max_val) {
-			max_val = dequant[i];
+		float prob = ((float)quant_val - (float)zero_point) * scale * 100.0f;
+		if (prob < 0.0f) prob = 0.0f;
+		if (prob > 100.0f) prob = 100.0f;
+		probs[i] = prob;
+
+		if (prob > max_prob) {
+			max_prob = prob;
 			top_class = i;
 		}
-	}
-
-	/* Softmax probabilities */
-	float sum_exp = 0.0f;
-	float probs[12];
-	for (int i = 0; i < 12; i++) {
-		probs[i] = expf(dequant[i] - max_val);
-		sum_exp += probs[i];
-	}
-	for (int i = 0; i < 12; i++) {
-		probs[i] = (probs[i] / sum_exp) * 100.0f;
 	}
 
 	float top_confidence = probs[top_class];
@@ -156,22 +153,22 @@ static bool execute_inference(bool print_details, uint32_t *out_cycles, uint32_t
 		printf("   Hardware Cycles: %u cycles (@ 400 MHz)\n", elapsed_cycles);
 		printf("   Top Prediction : [%s] (Confidence: %.1f%%)\n", kws_labels[top_class], top_confidence);
 		printf("---------------------------------------------------------------\n");
-		printf("Class Probabilities:\n");
+		printf("Class Probabilities (Speech Commands):\n");
 		for (int i = 0; i < 12; i++) {
 			printf("  [%02d] %-10s : %5.1f%% %s\n",
 			       i, kws_labels[i], probs[i],
-			       (i == top_class) ? "<-- [PREDICTED]" : "");
+			       (i == top_class) ? "<-- [PREDICTED MATCH 🎯]" : "");
 		}
 		printf("---------------------------------------------------------------\n");
 	}
 
 	/* RGB LED Feedback */
-	if (top_confidence >= 70.0f) {
-		set_rgb(0, 1, 0); /* Green: High Confidence Match */
-	} else if (top_confidence >= 40.0f) {
-		set_rgb(1, 1, 0); /* Yellow: Moderate Confidence */
+	if (top_confidence >= 50.0f && top_class == 1) {
+		set_rgb(0, 1, 0); /* Green: Verified "go" match */
+	} else if (top_confidence >= 30.0f) {
+		set_rgb(1, 1, 0); /* Yellow: Moderate confidence */
 	} else {
-		set_rgb(1, 0, 0); /* Red: Low Confidence / Unknown */
+		set_rgb(1, 0, 0); /* Red: Low confidence */
 	}
 
 	return true;
