@@ -28,7 +28,7 @@ This repository provides production-ready, deterministic **AI Agent Skills (`SKI
 | **[`07_dual_core_ipc`](examples/07_dual_core_ipc)** | *(CMSIS-RTOS)* | Asymmetric Multiprocessing (AMP) with M55-HE & M55-HP full-duplex Mailbox/IPM communication & latency benchmark. | Dual M55 (HP+HE) | ✅ Verified |
 | **[`08_sensor_imu`](examples/08_sensor_imu)** | *(I3C / IMU)* | Bosch BMI323 6-axis IMU over I3C, Cortex-M55 FPU 3D attitude estimation & SEGGER RTT horizon telemetry. | M55-HP | ✅ Verified |
 | **[`09_ethosu_npu_ai`](examples/09_ethosu_npu_ai)** | *(Edge AI / NPU)* | Arm Ethos-U55 NPU (256 MACs) hardware AI acceleration, TFLM KWS CNN inference & RTT latency benchmark. | M55-HP | ✅ Verified |
-
+| **[`10_adc_temp`](examples/10_adc_temp)** | *(ADC / TSENS)* | On-chip 12-bit SAR ADC (`adc0`), internal Silicon Die Temperature Sensor (TSENS Ch 6), thermal RGB alerts & RTT gauge. | M55-HP | 🚀 Ready to Flash |
 
 ---
 
@@ -42,6 +42,7 @@ This hub solves notoriously frustrating hardware quirks out-of-the-box:
 5. **Universal Timer (UTIMER) 32-Bit PWM**: Zero CPU overhead RGB LED breathing & color cycling.
 6. **I3C High-Speed Sensor Telemetry**: Autonomous dynamic address assignment (`0x0A`) and FPU attitude calculation for Bosch BMI323.
 7. **Ethos-U55 NPU Acceleration**: Full TensorFlow Lite for Microcontrollers (TFLM) C++ pipeline accelerated by on-chip 256 MACs microNPU.
+8. **On-Chip SAR ADC & Silicon Thermal Telemetry**: Calibrated conversion of internal die temperature (`TSENS`) with zero external pins.
 
 ---
 
@@ -55,7 +56,7 @@ This hub solves notoriously frustrating hardware quirks out-of-the-box:
 ├── .github/
 │   └── FUNDING.yml            # GitHub Sponsor & Ko-fi config
 ├── docs/
-│   └── HARDWARE_GPIO_REFERENCE.md # Verified DevKit Pinout, LEDs, SW2, PWM, Dual-Core, I3C & NPU rules
+│   └── HARDWARE_GPIO_REFERENCE.md # Verified DevKit Pinout, LEDs, SW2, PWM, Dual-Core, I3C, NPU & ADC rules
 ├── examples/
 │   ├── 01_hello_world/        # Verified UART console output
 │   ├── 02_blinky/             # Verified 1Hz GPIO LED toggle
@@ -65,7 +66,8 @@ This hub solves notoriously frustrating hardware quirks out-of-the-box:
 │   ├── 06_timer_pwm/          # Hardware UTIMER 32-bit PWM & RGB Breathing
 │   ├── 07_dual_core_ipc/      # Dual-core AMP IPC over ARM MHUv2 (HP Master + HE Worker)
 │   ├── 08_sensor_imu/         # Bosch BMI323 6-axis IMU over I3C & 3D Attitude Telemetry
-│   └── 09_ethosu_npu_ai/      # Arm Ethos-U55 NPU Edge AI Acceleration (TFLM)
+│   ├── 09_ethosu_npu_ai/      # Arm Ethos-U55 NPU Edge AI Acceleration (TFLM)
+│   └── 10_adc_temp/           # On-chip 12-bit SAR ADC & Silicon Die Temp Sensor (TSENS)
 ├── scripts/
 │   └── app-write-mram         # Automated port-unlocking & package sync wrapper
 ├── AGENTS.md                  # System prompt & instruction entry point for LLMs

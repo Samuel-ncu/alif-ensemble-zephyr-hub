@@ -1,0 +1,14 @@
+/*
+ * Copyright (c) 2026 Samuel (Shu-Ming) Liu
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Devicetree overlay for On-chip ADC0 and RGB LED on Alif Ensemble E8
+ */
+
+&adc0 {
+	status = "okay";
+};
+
+&gpio6 {
+	status = "okay";
+};

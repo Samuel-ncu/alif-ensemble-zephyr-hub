@@ -254,6 +254,26 @@ The Alif Ensemble E8 processor integrates dedicated **Arm Ethos-U55 microNPUs** 
   CONFIG_ARM_ETHOS_U55_256=y
   ```
 
+---
 
+## 12. On-Chip 12-Bit SAR ADC & Internal Die Temperature Sensor (`TSENS`)
 
+The Alif Ensemble E8 processor integrates a high-precision 12-bit SAR ADC subsystem (`adc0`) with an internal Silicon Die Temperature Sensor (`TSENS`):
 
+| Signal / Peripheral | Hardware Specification | Devicetree Node | Routing / Channel | Reference Voltage |
+| :--- | :--- | :--- | :--- | :--- |
+| **`adc0`** | 12-bit SAR ADC @ `0x49028000` | `&adc0` (`compatible = "alif,adc"`) | Internal Analog Bus | 1.2V Internal Bandgap |
+| **`TSENS`** | On-chip Silicon Temperature Sensor | Sub-channel of `adc0` | **Channel 6** (`ADC_CH_TEMP_SENSOR = 6`) | 1200 mV Full Scale ($0 \sim 4095$) |
+| **ADC Resolution** | $1200\text{ mV} / 4095 \approx 0.293\text{ mV/count}$ | 12-bit single-ended | Sequence buffer `uint32_t` | — |
+
+### Kconfig Prerequisites:
+```ini
+CONFIG_ADC=y
+CONFIG_USE_ALIF_HAL_ANALOG=y
+```
+
+### Conversion Rule:
+The digital code to temperature conversion uses calibrated polynomial/lookup table `tempData[402][2]` from Alif HAL `temperature.h`:
+- $918 \to -40^\circ\text{C}$
+- $1080 \to +25^\circ\text{C}$ (Room temperature reference)
+- $1320 \to +90^\circ\text{C}$

@@ -25,7 +25,8 @@ This repository serves as a knowledge and execution hub for AI Coding Agents (su
 │   ├── 06_timer_pwm/            # Verified 06: Hardware UTIMER 32-bit PWM & RGB Breathing
 │   ├── 07_dual_core_ipc/        # Verified 07: Dual-core AMP IPC over ARM MHUv2 (HP Master + HE Worker)
 │   ├── 08_sensor_imu/           # Verified 08: Bosch BMI323 6-Axis IMU over I3C & 3D Attitude Telemetry
-│   └── 09_ethosu_npu_ai/        # Verified 09: Arm Ethos-U55 NPU Edge AI Hardware Acceleration (TFLM)
+│   ├── 09_ethosu_npu_ai/        # Verified 09: Arm Ethos-U55 NPU Edge AI Hardware Acceleration (TFLM)
+│   └── 10_adc_temp/             # Verified 10: On-Chip 12-Bit SAR ADC & Internal Die Temp Sensor (TSENS)
 ├── scripts/
 │   └── app-write-mram           # Automated serial unlocking flash wrapper
 ├── LICENSE                      # Apache License 2.0
@@ -35,7 +36,7 @@ This repository serves as a knowledge and execution hub for AI Coding Agents (su
 
 ---
 
-## ⚡ 9 Golden Rules for Automated Alif Hardware Operations
+## ⚡ Golden Rules for Automated Alif Hardware Operations
 
 When an AI Agent is tasked with creating, building, flashing, or debugging applications on Alif Ensemble processors, the following rules MUST be followed strictly:
 
@@ -143,6 +144,16 @@ When an AI Agent is tasked with creating, building, flashing, or debugging appli
   * **Cortex-M55 HE (`rtss_he`)**: Restricted to **128 MACs** (`-DETHOSU_TARGET_NPU_CONFIG=ethos-u55-128`, `CONFIG_ARM_ETHOS_U55_128=y`).
 * **Devicetree & Snippet**: Must apply `-S ethos-u55-enable` or overlay `&ethosu0 { status = "okay"; };`.
 * **West Manifest Module**: `tflite-micro` belongs to Zephyr's `optional` group. In workspaces without all optional modules pre-cloned, pull it into `optional/modules/lib/tflite-micro` (revision `8d404de7`).
+
+### 12. On-Chip SAR ADC & Internal Die Temperature Sensor (`TSENS`)
+* **Controller**: `adc0` at `0x49028000` (`compatible = "alif,adc"`).
+* **Required Kconfig Symbols**:
+  * `CONFIG_ADC=y`
+  * `CONFIG_USE_ALIF_HAL_ANALOG=y`
+* **Internal Routing**:
+  * Internal Silicon Die Temperature Sensor (`TSENS`) is connected to **Channel 6** (`ADC_CHANNEL_6`).
+  * Resolution: 12-bit SAR ($0 \sim 4095$ counts) with 1.2V internal analog reference ($V_{\text{ref}} = 1200\text{ mV}$).
+  * Digital-to-temperature conversion requires the calibrated lookup table (`tempData[402][2]` from Alif HAL `temperature.h`).
 
 
 

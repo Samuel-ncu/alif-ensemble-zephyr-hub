@@ -276,6 +276,14 @@ west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp \
   -DETHOSU_TARGET_NPU_CONFIG=ethos-u55-256
 ```
 
+#### Option I: Example 10 - On-Chip 12-Bit SAR ADC & Internal Die Temperature Sensor (TSENS)
+*Note: Samples internal silicon temperature sensor on Channel 6, converts to °C/°F using calibrated lookups, tracks Min/Max/Avg, and displays ASCII thermometer gauge over SEGGER RTT.*
+```bash
+cd ~/alif/sdk-alif/zephyr
+west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp \
+  /mnt/c/Users/test/.gemini/antigravity/scratch/alif_vscode-template/examples/10_adc_temp
+```
+
 ### 5.2 Flash to MRAM
 1. Verify `SW4` switch is in the **`SE` (Top)** position.
 2. Ensure no serial terminals are open (`pkill picocom`). *(The enhanced `app-write-mram` wrapper will also auto-release any lingering locks).*
@@ -381,6 +389,21 @@ west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp \
        - `'s'` : Trigger manual single inference.
        - `'b'` : Run 50-inference benchmark (measures min/avg/max latency, CPU cycles, and FPS).
        - `'t'` : Toggle 2 Hz continuous inference loop.
+       - `'h'` : Print help menu.
+
+10. **Verify Example 10 (On-Chip 12-Bit SAR ADC & Silicon Die Temp Sensor)**:
+   - Slide `SW4` to **`UART2` (Center)** and press **`RESET`**.
+   - Observe onboard `LEDRGB1`:
+     - Quick 3x Green/Yellow pulse on boot.
+     - Solid Green indicates normal operating die temperature ($<35^\circ\text{C}$).
+     - Solid Yellow indicates warm die temperature ($35^\circ\text{C} \sim 50^\circ\text{C}$).
+     - Solid Red indicates hot thermal threshold ($\ge 50^\circ\text{C}$).
+   - Open J-Link RTT Viewer with Address **`0x20000410`** (`JTAG`, `4000 kHz`):
+     - Displays real-time die temperature, millivolts, Min/Max/Avg statistics, and visual ASCII thermometer gauge.
+     - Test interactive commands in Input bar:
+       - `'s'` : Immediate manual ADC sample.
+       - `'r'` : Reset Min/Max/Avg temperature tracking.
+       - `'m'` : Toggle between visual thermometer gauge bar and compact telemetry stream.
        - `'h'` : Print help menu.
 
 ---
