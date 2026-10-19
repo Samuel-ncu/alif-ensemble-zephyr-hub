@@ -245,6 +245,13 @@ cd ~/alif/sdk-alif/zephyr
 west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp examples/04_hello_rtt
 ```
 
+#### Option E: Example 5 - Secure Enclave (SES) Services & Hardware TRNG
+*Note: Communicates with on-chip Secure Enclave over MHUv2 mailbox to query chip UID, OTP, LCS, and live hardware TRNG entropy.*
+```bash
+cd ~/alif/sdk-alif/zephyr
+west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp examples/05_se_services
+```
+
 ### 5.2 Flash to MRAM
 1. Verify `SW4` switch is in the **`SE` (Top)** position.
 2. Ensure no serial terminals are open (`pkill picocom`). *(The enhanced `app-write-mram` wrapper will also auto-release any lingering locks).*

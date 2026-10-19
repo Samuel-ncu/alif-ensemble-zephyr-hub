@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "Example 05: Alif Ensemble E8 - Secure Enclave Services"
+
+config HAS_SEGGER_RTT
+	default y
+
+source "Kconfig.zephyr"
+
