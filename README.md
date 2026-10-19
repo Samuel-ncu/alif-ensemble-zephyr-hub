@@ -25,7 +25,7 @@ This repository provides production-ready, deterministic **AI Agent Skills (`SKI
 | **[`04_hello_rtt`](examples/04_hello_rtt)** | `hello_rtt` | SEGGER RTT real-time logging without toggling physical `SW4` UART switches. | M55-HP / M55-HE | ✅ Verified |
 | **[`05_se_services`](examples/05_se_services)** | *(SES Security)* | Secure Enclave (SES) communication: reads OTP, LCS lifecycle, part UID & live hardware TRNG entropy over MHUv2. | M55-HP / M55-HE | ✅ Verified |
 | **[`06_timer_pwm`](examples/06_timer_pwm)** | *(Hardware PWM)* | Hardware Universal Timer (UTIMER) & RGB LED smooth PWM color breathing. | M55-HP / M55-HE | ✅ Verified |
-| **[`07_dual_core_ipc`](examples/07_dual_core_ipc)** | *(CMSIS-RTOS)* | Asymmetric Multiprocessing (AMP) with M55-HE & M55-HP full-duplex Mailbox/IPM communication & latency benchmark. | Dual M55 (HP+HE) | 🚀 Ready to Flash |
+| **[`07_dual_core_ipc`](examples/07_dual_core_ipc)** | *(CMSIS-RTOS)* | Asymmetric Multiprocessing (AMP) with M55-HE & M55-HP full-duplex Mailbox/IPM communication & latency benchmark. | Dual M55 (HP+HE) | ✅ Verified |
 
 ---
 

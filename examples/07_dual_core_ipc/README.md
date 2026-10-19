@@ -1,5 +1,7 @@
 # Example 07: Dual-Core Asymmetric Multiprocessing (AMP) IPC over ARM MHUv2
 
+> **Status**: ✅ **Verified on Physical Hardware** (Alif Ensemble E8 DevKit `AE822FA0E5597LS0`)
+
 This example demonstrates high-performance, real-time **Asymmetric Multiprocessing (AMP)** and **Inter-Processor Communication (IPC)** between the **Cortex-M55 High Performance (HP)** core and the **Cortex-M55 High Efficiency (HE)** core on the Alif Semiconductor Ensemble E8 DevKit (`AE822FA0E5597LS0`).
 
 ---

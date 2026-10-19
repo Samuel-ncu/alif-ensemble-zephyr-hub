@@ -22,7 +22,8 @@ This repository serves as a knowledge and execution hub for AI Coding Agents (su
 │   ├── 03_button/               # Verified 03: SW2 5-Way Joystick Hardware Interrupts
 │   ├── 04_hello_rtt/            # Verified 04: SEGGER RTT Real-Time Logging (Zero SW4 Switch)
 │   ├── 05_se_services/          # Verified 05: Secure Enclave (SES) Services & Hardware TRNG
-│   └── 06_timer_pwm/            # Verified 06: Hardware UTIMER 32-bit PWM & RGB Breathing
+│   ├── 06_timer_pwm/            # Verified 06: Hardware UTIMER 32-bit PWM & RGB Breathing
+│   └── 07_dual_core_ipc/        # Verified 07: Dual-core AMP IPC over ARM MHUv2 (HP Master + HE Worker)
 ├── scripts/
 │   └── app-write-mram           # Automated serial unlocking flash wrapper
 ├── LICENSE                      # Apache License 2.0
@@ -32,7 +33,7 @@ This repository serves as a knowledge and execution hub for AI Coding Agents (su
 
 ---
 
-## ⚡ 7 Golden Rules for Automated Alif Hardware Operations
+## ⚡ 9 Golden Rules for Automated Alif Hardware Operations
 
 When an AI Agent is tasked with creating, building, flashing, or debugging applications on Alif Ensemble processors, the following rules MUST be followed strictly:
 
