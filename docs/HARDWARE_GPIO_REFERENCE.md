@@ -226,5 +226,34 @@ On the Alif E8 DevKit (Rev A0), motion sensing is provided by an onboard **Bosch
 &gpio7 { status = "okay"; };
 ```
 
+---
+
+## 11. Arm Ethos-U55 NPU Edge AI Accelerator Mapping
+
+The Alif Ensemble E8 processor integrates dedicated **Arm Ethos-U55 microNPUs** for zero-wait-state edge AI acceleration tightly coupled with the Cortex-M55 cores:
+
+| Processor Core | NPU Engine | Max MACs / Cycle | Clock Frequency | Supported Memory Regions | Devicetree Node |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Cortex-M55 HP (`rtss_hp`)** | **Ethos-U55** | **256 MACs** | 400 MHz | DTCM (`0x20000000`), SRAM0, SRAM1 | `&ethosu0` |
+| **Cortex-M55 HE (`rtss_he`)** | **Ethos-U55** | **128 MACs** | 160 MHz | ITCM / DTCM (`0x58000000`), SRAM0 | `&ethosu0` |
+| **Cortex-A32 APSS (`apss`)** | **Ethos-U85** | **256 MACs** | 800 MHz | SRAM1 (`0x08000000`, non-cacheable) | `&ethosu1` |
+
+### Key Devicetree & Snippet Pattern:
+- Apply Zephyr snippet `-S ethos-u55-enable` or overlay:
+  ```dts
+  &ethosu0 {
+      status = "okay";
+  };
+  ```
+- Kconfig prerequisites:
+  ```ini
+  CONFIG_CPP=y
+  CONFIG_STD_CPP17=y
+  CONFIG_TENSORFLOW_LITE_MICRO=y
+  CONFIG_ARM_ETHOS_U=y
+  CONFIG_ARM_ETHOS_U55_256=y
+  ```
+
+
 
 

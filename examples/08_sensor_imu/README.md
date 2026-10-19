@@ -102,3 +102,4 @@ nm build/zephyr/zephyr.elf | grep _SEGGER_RTT
    - **Target Interface & Speed**: `JTAG`, `4000 kHz`
    - **RTT Control Block**: Select **`Address`** and enter **`0x20000410`**.
 4. The terminal will immediately stream real-time IMU attitude data and ASCII horizon meters!
+

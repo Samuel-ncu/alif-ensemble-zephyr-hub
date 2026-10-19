@@ -24,7 +24,8 @@ This repository serves as a knowledge and execution hub for AI Coding Agents (su
 │   ├── 05_se_services/          # Verified 05: Secure Enclave (SES) Services & Hardware TRNG
 │   ├── 06_timer_pwm/            # Verified 06: Hardware UTIMER 32-bit PWM & RGB Breathing
 │   ├── 07_dual_core_ipc/        # Verified 07: Dual-core AMP IPC over ARM MHUv2 (HP Master + HE Worker)
-│   └── 08_sensor_imu/           # Verified 08: Bosch BMI323 6-Axis IMU over I3C & 3D Attitude Telemetry
+│   ├── 08_sensor_imu/           # Verified 08: Bosch BMI323 6-Axis IMU over I3C & 3D Attitude Telemetry
+│   └── 09_ethosu_npu_ai/        # Verified 09: Arm Ethos-U55 NPU Edge AI Hardware Acceleration (TFLM)
 ├── scripts/
 │   └── app-write-mram           # Automated serial unlocking flash wrapper
 ├── LICENSE                      # Apache License 2.0
@@ -135,5 +136,13 @@ When an AI Agent is tasked with creating, building, flashing, or debugging appli
 * **Driver Symbols**:
   * `CONFIG_I3C=y`, `CONFIG_I3C_INIT_RSTACT=y`, `CONFIG_I3C_USE_IBI=n`.
   * `CONFIG_SENSOR=y`, `CONFIG_BMI323=y` (automatically selects `CONFIG_BMI323_BUS_I3C=y`).
+
+### 11. Arm Ethos-U55 NPU & TFLM Configuration Rules
+* **Target Core vs NPU MAC Allocation**:
+  * **Cortex-M55 HP (`rtss_hp`)**: Supports **256 MACs** (`-DETHOSU_TARGET_NPU_CONFIG=ethos-u55-256`, `CONFIG_ARM_ETHOS_U55_256=y`).
+  * **Cortex-M55 HE (`rtss_he`)**: Restricted to **128 MACs** (`-DETHOSU_TARGET_NPU_CONFIG=ethos-u55-128`, `CONFIG_ARM_ETHOS_U55_128=y`).
+* **Devicetree & Snippet**: Must apply `-S ethos-u55-enable` or overlay `&ethosu0 { status = "okay"; };`.
+* **West Manifest Module**: `tflite-micro` belongs to Zephyr's `optional` group. In workspaces without all optional modules pre-cloned, pull it into `optional/modules/lib/tflite-micro` (revision `8d404de7`).
+
 
 

@@ -266,6 +266,16 @@ cd ~/alif/sdk-alif/zephyr
 west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp /mnt/c/Users/test/.gemini/antigravity/scratch/alif_vscode-template/examples/08_sensor_imu
 ```
 
+#### Option H: Example 9 - Arm Ethos-U55 NPU Edge AI Hardware Acceleration (TFLM)
+*Note: TensorFlow Lite for Microcontrollers (TFLM) running on Cortex-M55 HP accelerated by on-chip Arm Ethos-U55 NPU (256 MACs @ 400 MHz), measuring real-time inference latency and FPS.*
+```bash
+cd ~/alif/sdk-alif/zephyr
+west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp \
+  -S ethos-u55-enable \
+  /mnt/c/Users/test/.gemini/antigravity/scratch/alif_vscode-template/examples/09_ethosu_npu_ai -- \
+  -DETHOSU_TARGET_NPU_CONFIG=ethos-u55-256
+```
+
 ### 5.2 Flash to MRAM
 1. Verify `SW4` switch is in the **`SE` (Top)** position.
 2. Ensure no serial terminals are open (`pkill picocom`). *(The enhanced `app-write-mram` wrapper will also auto-release any lingering locks).*
@@ -356,6 +366,21 @@ west build -p always -b alif_e8_dk/ae822fa0e5597xx0/rtss_hp /mnt/c/Users/test/.g
        - `'c'` : Tare/Calibrate current physical position as 0.0° level.
        - `'r'` : Reset calibration offsets to factory default.
        - `'m'` : Toggle between compact telemetry stream and visual ASCII horizon bars.
+       - `'h'` : Print help menu.
+
+9. **Verify Example 09 (Arm Ethos-U55 NPU Edge AI Hardware Acceleration)**:
+   - Slide `SW4` to **`UART2` (Center)** and press **`RESET`**.
+   - Observe onboard `LEDRGB1`:
+     - Blue pulses 3 times on boot, then turns Blue while executing inference.
+     - Solid Green indicates high confidence classification match ($\ge 70\%$).
+     - Solid Yellow indicates moderate confidence or uncertain classification.
+     - Red indicates error or low confidence.
+   - Open J-Link RTT Viewer with Address **`0x20000410`** (`JTAG`, `4000 kHz`):
+     - Displays NPU startup banner, model name (`keyword_spotting_cnn_small_int8`), tensor arena size, and initial classification result with full 12-class probability breakdown.
+     - Test interactive commands in Input bar:
+       - `'s'` : Trigger manual single inference.
+       - `'b'` : Run 50-inference benchmark (measures min/avg/max latency, CPU cycles, and FPS).
+       - `'t'` : Toggle 2 Hz continuous inference loop.
        - `'h'` : Print help menu.
 
 ---
